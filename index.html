@@ -471,15 +471,15 @@
                   </div>
                 </div>
 
-                <!-- 3. KONTROL NOMOR UNIK / NOMOR URUT (BARU) -->
+                <!-- 3. KONTROL NOMOR SERTIFIKAT LENGKAP -->
                 <div class="pt-2 border-t border-gray-100">
                   <div class="flex items-center justify-between mb-1.5">
                     <p class="font-bold text-gray-800 flex items-center space-x-1">
                       <i class="fa-solid fa-hashtag text-brand-red"></i>
-                      <span>Nomor Unik / Urut (4 Digit):</span>
+                      <span>Posisi & Style Nomor Sertifikat:</span>
                     </p>
                     <label class="flex items-center space-x-1 cursor-pointer">
-                      <input type="checkbox" id="showNumCode" checked onchange="renderCertCanvas()" class="rounded text-brand-red focus:ring-brand-red">
+                      <input type="checkbox" id="showCertNo" checked onchange="renderCertCanvas()" class="rounded text-brand-red focus:ring-brand-red">
                       <span class="text-[10px] font-semibold text-gray-600">Tampilkan</span>
                     </label>
                   </div>
@@ -488,21 +488,21 @@
                     <div class="grid grid-cols-2 gap-2">
                       <div>
                         <label class="text-[10px] text-gray-500">Posisi X:</label>
-                        <input type="range" id="posXNumCode" min="50" max="1150" value="1020" oninput="renderCertCanvas()" class="w-full accent-brand-red">
+                        <input type="range" id="posXCertNo" min="50" max="1150" value="600" oninput="renderCertCanvas()" class="w-full accent-brand-red">
                       </div>
                       <div>
                         <label class="text-[10px] text-gray-500">Posisi Y:</label>
-                        <input type="range" id="posYNumCode" min="30" max="800" value="80" oninput="renderCertCanvas()" class="w-full accent-brand-red">
+                        <input type="range" id="posYCertNo" min="30" max="800" value="330" oninput="renderCertCanvas()" class="w-full accent-brand-red">
                       </div>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                       <div>
                         <label class="text-[10px] text-gray-500">Ukuran Font:</label>
-                        <input type="number" id="fontSizeNumCode" min="10" max="48" value="22" oninput="renderCertCanvas()" class="w-full p-1 border rounded text-xs">
+                        <input type="number" id="fontSizeCertNo" min="10" max="48" value="18" oninput="renderCertCanvas()" class="w-full p-1 border rounded text-xs">
                       </div>
                       <div>
                         <label class="text-[10px] text-gray-500">Warna Teks:</label>
-                        <input type="color" id="colorNumCode" value="#fa4622" oninput="renderCertCanvas()" class="w-full h-7 p-0 border rounded cursor-pointer">
+                        <input type="color" id="colorCertNo" value="#334155" oninput="renderCertCanvas()" class="w-full h-7 p-0 border rounded cursor-pointer">
                       </div>
                     </div>
                   </div>
@@ -1546,12 +1546,12 @@
       const posXQR = parseInt(document.getElementById('posXQR')?.value || '950');
       const posYQR = parseInt(document.getElementById('posYQR')?.value || '650');
 
-      // KONTROL NOMOR UNIK / NOMOR URUT (NEW)
-      const showNumCode = document.getElementById('showNumCode')?.checked ?? true;
-      const posXNumCode = parseInt(document.getElementById('posXNumCode')?.value || '1020');
-      const posYNumCode = parseInt(document.getElementById('posYNumCode')?.value || '80');
-      const fontSizeNumCode = parseInt(document.getElementById('fontSizeNumCode')?.value || '22');
-      const colorNumCode = document.getElementById('colorNumCode')?.value || '#fa4622';
+      // KONTROL NOMOR SERTIFIKAT LENGKAP (SINGLE NUMBER INSTANCE)
+      const showCertNo = document.getElementById('showCertNo')?.checked ?? true;
+      const posXCertNo = parseInt(document.getElementById('posXCertNo')?.value || '600');
+      const posYCertNo = parseInt(document.getElementById('posYCertNo')?.value || '330');
+      const fontSizeCertNo = parseInt(document.getElementById('fontSizeCertNo')?.value || '18');
+      const colorCertNo = document.getElementById('colorCertNo')?.value || '#334155';
 
       const cert = sampleCert || state.certificates.find(c => c.category === category) || {
         name: "Faqih Khairy El Rafif", school: "SDIT Wahdatul Ummah",
@@ -1582,17 +1582,13 @@
         ctx.fillText(`KEMBARANAS III SAKO SIT - ${category.toUpperCase()}`, canvas.width / 2, 215);
       }
 
-      // RENDER FULL CERTIFICATE NUMBER
-      ctx.fillStyle = "#334155"; ctx.font = "bold 18px 'Plus Jakarta Sans', sans-serif"; ctx.textAlign = "center";
-      ctx.fillText(`Nomor: ${cert.certNo}`, canvas.width / 2, 280);
-
-      // RENDER NOMOR UNIK / NOMOR URUT 4 DIGIT SEPARATELY
-      if (showNumCode && cert.numCode) {
+      // RENDER SINGLE CERTIFICATE NUMBER WITH FULL X, Y, FONT SIZE & COLOR CONTROL
+      if (showCertNo) {
         ctx.save();
-        ctx.fillStyle = colorNumCode;
-        ctx.font = `bold ${fontSizeNumCode}px 'Plus Jakarta Sans', monospace`;
+        ctx.fillStyle = colorCertNo;
+        ctx.font = `bold ${fontSizeCertNo}px 'Plus Jakarta Sans', monospace, sans-serif`;
         ctx.textAlign = "center";
-        ctx.fillText(`No. ${cert.numCode}`, posXNumCode, posYNumCode);
+        ctx.fillText(`No. ${cert.certNo}`, posXCertNo, posYCertNo);
         ctx.restore();
       }
 
