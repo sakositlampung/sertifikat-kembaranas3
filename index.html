@@ -132,7 +132,7 @@
 
       <!-- Verified Information Card -->
       <div class="w-full max-w-lg bg-white rounded-xl shadow-2xl overflow-hidden border border-white/50 transition-all duration-300">
-        <div class="p-6 sm:p-8 space-y-5 text-gray-800" id="publicCertCardContent">
+        <div class="p-6 sm:p-8 space-y-4 text-gray-800" id="publicCertCardContent">
           <!-- Dynamically populated by JS -->
         </div>
 
@@ -171,6 +171,7 @@
         <!-- Search Form -->
         <div class="bg-white/10 backdrop-blur-md p-2 rounded-2xl border border-white/20 shadow-2xl flex flex-col sm:flex-row gap-2">
           <input type="text" id="publicSearchInput" placeholder="Masukkan 4 Digit No / Nomor Sertifikat Lengkap..." 
+                 onkeypress="if(event.key==='Enter') searchCertificate()"
                  class="w-full px-4 py-3 rounded-xl bg-white text-gray-800 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
           <button onclick="searchCertificate()" class="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-gray-900 font-bold rounded-xl text-sm transition shadow flex items-center justify-center space-x-2 shrink-0">
             <i class="fa-solid fa-magnifying-glass"></i>
@@ -240,7 +241,7 @@
       <!-- ADMIN CONTAINER CONTENT -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-4">
 
-        <!-- TAB 1: DATA SERTIFIKAT (WITH TOP PAGINATION & MULTI SELECT) -->
+        <!-- TAB 1: DATA SERTIFIKAT -->
         <div id="adminTabData" class="space-y-4">
           
           <!-- Filters & Actions Bar -->
@@ -285,7 +286,7 @@
               </div>
             </div>
 
-            <!-- BULK ACTION BAR (Tampil ketika ada checkbox dipilih) -->
+            <!-- BULK ACTION BAR -->
             <div id="bulkActionBar" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-lg flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center space-x-2 text-amber-900 text-xs font-bold">
                 <i class="fa-solid fa-list-check text-amber-600 text-base"></i>
@@ -310,7 +311,7 @@
           <!-- Table Container -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             
-            <!-- TOP PAGINATION BAR CONTROL (DITAROH DI ATAS TABEL) -->
+            <!-- TOP PAGINATION BAR CONTROL -->
             <div class="p-3.5 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-600">
               <div class="flex items-center space-x-3">
                 <span class="flex items-center space-x-1.5">
@@ -423,18 +424,18 @@
           </div>
         </div>
 
-        <!-- TAB 3: CANVAS EDITOR -->
+        <!-- TAB 3: CANVAS EDITOR (LAYOUT SAVER PER CATEGORY) -->
         <div id="adminTabTemplate" class="hidden space-y-6">
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4 lg:col-span-1 max-h-[85vh] overflow-y-auto">
-              <h3 class="text-sm font-bold text-gray-900 border-b border-gray-200 pb-3 flex items-center justify-between">
-                <span>Pengaturan Layout Canvas</span>
+              <div class="border-b border-gray-200 pb-3 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-gray-900">Pengaturan Layout Canvas</h3>
                 <span id="canvasCategoryBadge" class="text-[10px] bg-brand-red text-white px-2 py-0.5 rounded font-bold uppercase">Peserta</span>
-              </h3>
+              </div>
 
               <div>
-                <label class="block text-xs font-semibold text-gray-700 mb-1">Kategori Sertifikat:</label>
-                <select id="editorCategorySelect" onchange="onEditorCategoryChange()" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-brand-red">
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Pilih Kategori Sertifikat:</label>
+                <select id="editorCategorySelect" onchange="onEditorCategoryChange()" class="w-full p-2 border border-gray-300 rounded-lg text-xs font-bold focus:ring-2 focus:ring-brand-red bg-amber-50">
                   <option value="Peserta">Peserta</option>
                   <option value="Bindamping">Bindamping</option>
                   <option value="Panitia">Panitia</option>
@@ -443,8 +444,16 @@
               </div>
 
               <div>
-                <label class="block text-xs font-semibold text-gray-700 mb-1">Upload Gambar Background Custom:</label>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Upload Background Custom (Auto Compress JPEG):</label>
                 <input type="file" id="bgImageUpload" accept="image/*" onchange="handleBgImageUpload(event)" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-brand-red/10 file:text-brand-red">
+                <p class="text-[10px] text-gray-400 mt-1">Sistem otomatis mengompresi gambar ke format JPEG ~500KB agar aman tersimpan permanen di LocalStorage.</p>
+              </div>
+
+              <div id="bgRemoveContainer" class="hidden">
+                <button onclick="removeCategoryBgImage()" class="px-3 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded text-xs font-semibold transition flex items-center space-x-1">
+                  <i class="fa-solid fa-trash-can"></i>
+                  <span>Hapus Background Custom</span>
+                </button>
               </div>
 
               <hr class="border-gray-200">
@@ -458,11 +467,11 @@
                 <div class="grid grid-cols-2 gap-2">
                   <div>
                     <label class="text-[11px] text-gray-500">Posisi Y:</label>
-                    <input type="range" id="posYName" min="100" max="700" value="380" oninput="renderCertCanvas()" class="w-full accent-brand-red">
+                    <input type="range" id="posYName" min="100" max="750" value="380" oninput="onLayoutInputChange()" class="w-full accent-brand-red">
                   </div>
                   <div>
                     <label class="text-[11px] text-gray-500">Ukuran Font:</label>
-                    <input type="number" id="fontSizeName" min="16" max="72" value="42" oninput="renderCertCanvas()" class="w-full p-1 border rounded text-xs">
+                    <input type="number" id="fontSizeName" min="16" max="72" value="42" oninput="onLayoutInputChange()" class="w-full p-1 border rounded text-xs">
                   </div>
                 </div>
 
@@ -474,11 +483,11 @@
                 <div class="grid grid-cols-2 gap-2">
                   <div>
                     <label class="text-[11px] text-gray-500">Posisi Y:</label>
-                    <input type="range" id="posYSchool" min="100" max="700" value="450" oninput="renderCertCanvas()" class="w-full accent-brand-red">
+                    <input type="range" id="posYSchool" min="100" max="750" value="450" oninput="onLayoutInputChange()" class="w-full accent-brand-red">
                   </div>
                   <div>
                     <label class="text-[11px] text-gray-500">Ukuran Font:</label>
-                    <input type="number" id="fontSizeSchool" min="12" max="48" value="24" oninput="renderCertCanvas()" class="w-full p-1 border rounded text-xs">
+                    <input type="number" id="fontSizeSchool" min="12" max="48" value="24" oninput="onLayoutInputChange()" class="w-full p-1 border rounded text-xs">
                   </div>
                 </div>
 
@@ -490,7 +499,7 @@
                       <span>Posisi & Style Nomor Sertifikat:</span>
                     </p>
                     <label class="flex items-center space-x-1 cursor-pointer">
-                      <input type="checkbox" id="showCertNo" checked onchange="renderCertCanvas()" class="rounded text-brand-red focus:ring-brand-red">
+                      <input type="checkbox" id="showCertNo" checked onchange="onLayoutInputChange()" class="rounded text-brand-red focus:ring-brand-red">
                       <span class="text-[10px] font-semibold text-gray-600">Tampilkan</span>
                     </label>
                   </div>
@@ -499,21 +508,21 @@
                     <div class="grid grid-cols-2 gap-2">
                       <div>
                         <label class="text-[10px] text-gray-500">Posisi X:</label>
-                        <input type="range" id="posXCertNo" min="50" max="1150" value="600" oninput="renderCertCanvas()" class="w-full accent-brand-red">
+                        <input type="range" id="posXCertNo" min="50" max="1150" value="600" oninput="onLayoutInputChange()" class="w-full accent-brand-red">
                       </div>
                       <div>
                         <label class="text-[10px] text-gray-500">Posisi Y:</label>
-                        <input type="range" id="posYCertNo" min="30" max="800" value="330" oninput="renderCertCanvas()" class="w-full accent-brand-red">
+                        <input type="range" id="posYCertNo" min="30" max="800" value="330" oninput="onLayoutInputChange()" class="w-full accent-brand-red">
                       </div>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                       <div>
                         <label class="text-[10px] text-gray-500">Ukuran Font:</label>
-                        <input type="number" id="fontSizeCertNo" min="10" max="48" value="18" oninput="renderCertCanvas()" class="w-full p-1 border rounded text-xs">
+                        <input type="number" id="fontSizeCertNo" min="10" max="48" value="18" oninput="onLayoutInputChange()" class="w-full p-1 border rounded text-xs">
                       </div>
                       <div>
                         <label class="text-[10px] text-gray-500">Warna Teks:</label>
-                        <input type="color" id="colorCertNo" value="#334155" oninput="renderCertCanvas()" class="w-full h-7 p-0 border rounded cursor-pointer">
+                        <input type="color" id="colorCertNo" value="#334155" oninput="onLayoutInputChange()" class="w-full h-7 p-0 border rounded cursor-pointer">
                       </div>
                     </div>
                   </div>
@@ -522,24 +531,29 @@
                 <!-- 4. KONTROL QR CODE -->
                 <p class="font-bold text-gray-800 pt-2 flex items-center space-x-1">
                   <i class="fa-solid fa-qrcode text-brand-red"></i>
-                  <span>Posisi QR Code:</span>
+                  <span>Posisi QR Code Barcode:</span>
                 </p>
                 <div class="grid grid-cols-2 gap-2">
                   <div>
                     <label class="text-[11px] text-gray-500">Posisi X:</label>
-                    <input type="range" id="posXQR" min="50" max="1100" value="950" oninput="renderCertCanvas()" class="w-full accent-brand-red">
+                    <input type="range" id="posXQR" min="50" max="1100" value="950" oninput="onLayoutInputChange()" class="w-full accent-brand-red">
                   </div>
                   <div>
                     <label class="text-[11px] text-gray-500">Posisi Y:</label>
-                    <input type="range" id="posYQR" min="50" max="750" value="650" oninput="renderCertCanvas()" class="w-full accent-brand-red">
+                    <input type="range" id="posYQR" min="50" max="750" value="650" oninput="onLayoutInputChange()" class="w-full accent-brand-red">
                   </div>
                 </div>
               </div>
 
-              <button onclick="downloadTestCanvasImage()" class="w-full py-2 bg-brand-navy hover:bg-gray-800 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-1.5 shadow">
-                <i class="fa-solid fa-download"></i>
-                <span>Download Tes Render</span>
-              </button>
+              <div class="pt-2 flex gap-2">
+                <button onclick="downloadTestCanvasImage()" class="w-full py-2 bg-brand-navy hover:bg-gray-800 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-1.5 shadow">
+                  <i class="fa-solid fa-download"></i>
+                  <span>Download Tes Render</span>
+                </button>
+                <button onclick="resetCategoryLayout()" class="py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-xs transition shadow" title="Reset Posisi Default">
+                  <i class="fa-solid fa-rotate-left"></i>
+                </button>
+              </div>
             </div>
 
             <!-- Canvas Render Box -->
@@ -574,9 +588,9 @@
               <div class="border p-4 rounded-xl bg-amber-50/50 space-y-2">
                 <p class="font-bold text-sm text-amber-900"><i class="fa-solid fa-fire mr-1 text-amber-600"></i> Firebase Firestore:</p>
                 <ol class="list-decimal list-inside space-y-1 text-amber-900">
-                  <li>Buka Firebase Console $\rightarrow$ buat Cloud Firestore.</li>
+                  <li>Buka Firebase Console &rarr; buat Cloud Firestore.</li>
                   <li>Sistem otomatis menyimpan data sertifikat pada path: <code class="font-mono bg-white px-1 border rounded">/certificates/{id}</code>.</li>
-                  <li>Mendukung verifikasi langsung saat QR Code di-scan.</li>
+                  <li>Mendukung verifikasi langsung saat QR Code di-scan dari HP peserta.</li>
                 </ol>
               </div>
             </div>
@@ -756,9 +770,19 @@
       }
     ];
 
+    // DEFAULT LAYOUT CONFIG PER CATEGORY
+    const DEFAULT_LAYOUTS = {
+      'Peserta': { posYName: 380, fontSizeName: 42, posYSchool: 450, fontSizeSchool: 24, showCertNo: true, posXCertNo: 600, posYCertNo: 330, fontSizeCertNo: 18, colorCertNo: '#334155', posXQR: 950, posYQR: 650, bgImage: null },
+      'Bindamping': { posYName: 380, fontSizeName: 42, posYSchool: 450, fontSizeSchool: 24, showCertNo: true, posXCertNo: 600, posYCertNo: 330, fontSizeCertNo: 18, colorCertNo: '#334155', posXQR: 950, posYQR: 650, bgImage: null },
+      'Panitia': { posYName: 380, fontSizeName: 42, posYSchool: 450, fontSizeSchool: 24, showCertNo: true, posXCertNo: 600, posYCertNo: 330, fontSizeCertNo: 18, colorCertNo: '#334155', posXQR: 950, posYQR: 650, bgImage: null },
+      'Petugas Upacara': { posYName: 380, fontSizeName: 42, posYSchool: 450, fontSizeSchool: 24, showCertNo: true, posXCertNo: 600, posYCertNo: 330, fontSizeCertNo: 18, colorCertNo: '#334155', posXQR: 950, posYQR: 650, bgImage: null }
+    };
+
     // APPLICATION STATE
     let state = {
       certificates: [],
+      layouts: {},
+      loadedBgImages: {}, // Preloaded Image Objects in Memory
       isAdminLoggedIn: false,
       currentView: 'public_search',
       adminTab: 'data',
@@ -771,20 +795,19 @@
       selectedIds: new Set(),
       confirmCallback: null,
 
-      importPreviewData: [],
-      customBgImages: { 'Peserta': null, 'Bindamping': null, 'Panitia': null, 'Petugas Upacara': null }
+      importPreviewData: []
     };
 
     // ON DOM LOAD INITIALIZATION
     window.addEventListener('DOMContentLoaded', () => {
       loadInitialData();
+      loadLayoutSettings();
       checkURLParameters();
-      renderCertCanvas();
     });
 
-    // GET VERIFICATION URL FOR QR CODES
+    // DYNAMIC VERIFICATION URL FOR QR CODES
     function getVerificationUrl(numCode) {
-      const baseUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+      const baseUrl = window.location.origin + window.location.pathname;
       return `${baseUrl}?id=${encodeURIComponent(numCode)}`;
     }
 
@@ -794,7 +817,7 @@
       if (saved) {
         try { 
           state.certificates = JSON.parse(saved); 
-          // Synchronize sample 0001 if legacy name exists
+          // Synchronize default records if updated
           const idx = state.certificates.findIndex(c => c.id === "0001" && c.name.includes("Faqih"));
           if (idx !== -1) {
             state.certificates[idx] = { ...DEFAULT_CERTIFICATES[0] };
@@ -814,7 +837,46 @@
       localStorage.setItem('kembaranas_certificates', JSON.stringify(state.certificates));
     }
 
-    // CHECK URL PARAMETERS FOR VERIFICATION SCAN
+    // LOAD & SAVE LAYOUT SETTINGS PERMANENTLY (STORAGE KEY: kembaranas_layout_v3)
+    function loadLayoutSettings() {
+      const saved = localStorage.getItem('kembaranas_layout_v3');
+      if (saved) {
+        try {
+          state.layouts = JSON.parse(saved);
+          // Ensure all categories exist
+          ['Peserta', 'Bindamping', 'Panitia', 'Petugas Upacara'].forEach(cat => {
+            if (!state.layouts[cat]) state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat] };
+          });
+        } catch(e) {
+          state.layouts = JSON.parse(JSON.stringify(DEFAULT_LAYOUTS));
+        }
+      } else {
+        state.layouts = JSON.parse(JSON.stringify(DEFAULT_LAYOUTS));
+        saveLayoutSettings();
+      }
+
+      // Preload compressed Data URLs into HTML Image objects
+      Object.keys(state.layouts).forEach(cat => {
+        if (state.layouts[cat] && state.layouts[cat].bgImage) {
+          const img = new Image();
+          img.onload = () => {
+            state.loadedBgImages[cat] = img;
+            if (state.adminTab === 'template') renderCertCanvas();
+          };
+          img.src = state.layouts[cat].bgImage;
+        }
+      });
+    }
+
+    function saveLayoutSettings() {
+      try {
+        localStorage.setItem('kembaranas_layout_v3', JSON.stringify(state.layouts));
+      } catch (err) {
+        showToast("Storage penuh! Silakan hapus atau kompresi gambar background.", "error");
+      }
+    }
+
+    // CHECK URL PARAMETERS FOR VERIFICATION SCAN (?id=0001)
     function checkURLParameters() {
       const urlParams = new URLSearchParams(window.location.search);
       const certId = urlParams.get('id') || urlParams.get('no') || urlParams.get('code');
@@ -880,7 +942,7 @@
       }
     }
 
-    // PUBLIC VERIFICATION LOOKUP
+    // ACCURATE PUBLIC VERIFICATION LOOKUP
     function loadCertByCode(code) {
       if (!code) return;
       const query = String(code).trim().toLowerCase();
@@ -895,7 +957,7 @@
         state.activeCert = found;
         switchView('public_verification');
       } else {
-        showToast(`Sertifikat dengan nomor "${code}" tidak ditemukan!`, "error");
+        showToast(`Sertifikat dengan nomor/ID "${code}" tidak ditemukan!`, "error");
         switchView('public_search');
       }
     }
@@ -909,6 +971,7 @@
       loadCertByCode(input);
     }
 
+    // RENDER VERIFIED CERTIFICATE INFO CARD
     function renderPublicVerificationPage() {
       if (!state.activeCert) return;
       const cert = state.activeCert;
@@ -919,9 +982,9 @@
         <div class="border-b border-gray-100 pb-3">
           <div class="flex items-center space-x-2 text-xs font-bold text-gray-800">
             <i class="fa-solid fa-file-lines text-brand-red"></i>
-            <span>No.Sertifikat</span>
+            <span>No. Sertifikat</span>
           </div>
-          <p class="text-xs sm:text-sm font-mono font-bold text-gray-600 mt-1 pl-6">
+          <p class="text-xs sm:text-sm font-mono font-bold text-gray-700 mt-1 pl-6">
             ${cert.certNo}
           </p>
         </div>
@@ -970,15 +1033,23 @@
           </p>
         </div>
 
-        <!-- Field 6: Ditujukan Kepada -->
-        <div class="pb-1">
-          <div class="flex items-center space-x-2 text-xs font-bold text-gray-800">
-            <i class="fa-solid fa-paper-plane text-brand-red"></i>
-            <span>Ditujukan Kepada</span>
+        <!-- Field 6: Ditujukan Kepada (Identitas Lengkap) -->
+        <div class="pb-1 bg-red-50/50 p-3 rounded-lg border border-red-100">
+          <div class="flex items-center space-x-2 text-xs font-bold text-brand-darkred">
+            <i class="fa-solid fa-user-check"></i>
+            <span>Ditujukan Kepada Pemilik Sertifikat:</span>
           </div>
-          <p class="text-sm sm:text-base font-extrabold text-brand-darkred mt-1 pl-6">
-            ${cert.name} - ${cert.school}
+          <p class="text-sm sm:text-base font-extrabold text-gray-900 mt-1 pl-6">
+            ${cert.name}
           </p>
+          <p class="text-xs font-semibold text-gray-600 pl-6 mt-0.5">
+            <i class="fa-solid fa-building-columns mr-1 text-gray-400"></i> ${cert.school}
+          </p>
+          <div class="mt-2 pl-6">
+            <span class="px-2.5 py-0.5 bg-brand-red text-white text-[10px] font-bold rounded uppercase tracking-wider">
+              ${cert.category}
+            </span>
+          </div>
         </div>
       `;
     }
@@ -1043,7 +1114,7 @@
       } else if (tabName === 'template') {
         document.getElementById('adminTabTemplate').classList.remove('hidden');
         document.getElementById('tabBtnTemplate').className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white shadow-sm";
-        renderCertCanvas();
+        onEditorCategoryChange();
       } else if (tabName === 'guide') {
         document.getElementById('adminTabGuide').classList.remove('hidden');
         document.getElementById('tabBtnGuide').className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white shadow-sm";
@@ -1448,7 +1519,7 @@
       renderAdminTable();
     }
 
-    // EXCEL FILE IMPORT PARSER (SHEETJS)
+    // EXCEL FILE IMPORT PARSER
     function handleFileUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1578,49 +1649,127 @@
       showToast("Template Excel berhasil diunduh!", "info");
     }
 
-    // CANVAS EDITOR LOGIC
+    // CANVAS EDITOR LOGIC & PER-CATEGORY LAYOUT PERSISTENCE
     function onEditorCategoryChange() {
-      const category = document.getElementById('editorCategorySelect').value;
-      document.getElementById('canvasCategoryBadge').innerText = category;
+      const cat = document.getElementById('editorCategorySelect').value;
+      document.getElementById('canvasCategoryBadge').innerText = cat;
+      
+      const layout = state.layouts[cat] || DEFAULT_LAYOUTS[cat];
+      
+      document.getElementById('posYName').value = layout.posYName;
+      document.getElementById('fontSizeName').value = layout.fontSizeName;
+      document.getElementById('posYSchool').value = layout.posYSchool;
+      document.getElementById('fontSizeSchool').value = layout.fontSizeSchool;
+      document.getElementById('showCertNo').checked = layout.showCertNo;
+      document.getElementById('posXCertNo').value = layout.posXCertNo;
+      document.getElementById('posYCertNo').value = layout.posYCertNo;
+      document.getElementById('fontSizeCertNo').value = layout.fontSizeCertNo;
+      document.getElementById('colorCertNo').value = layout.colorCertNo || '#334155';
+      document.getElementById('posXQR').value = layout.posXQR;
+      document.getElementById('posYQR').value = layout.posYQR;
+
+      const bgRemoveDiv = document.getElementById('bgRemoveContainer');
+      if (layout.bgImage) bgRemoveDiv.classList.remove('hidden');
+      else bgRemoveDiv.classList.add('hidden');
+
       renderCertCanvas();
     }
 
+    function onLayoutInputChange() {
+      const cat = document.getElementById('editorCategorySelect').value;
+      if (!state.layouts[cat]) state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat] };
+
+      state.layouts[cat].posYName = parseInt(document.getElementById('posYName').value);
+      state.layouts[cat].fontSizeName = parseInt(document.getElementById('fontSizeName').value);
+      state.layouts[cat].posYSchool = parseInt(document.getElementById('posYSchool').value);
+      state.layouts[cat].fontSizeSchool = parseInt(document.getElementById('fontSizeSchool').value);
+      state.layouts[cat].showCertNo = document.getElementById('showCertNo').checked;
+      state.layouts[cat].posXCertNo = parseInt(document.getElementById('posXCertNo').value);
+      state.layouts[cat].posYCertNo = parseInt(document.getElementById('posYCertNo').value);
+      state.layouts[cat].fontSizeCertNo = parseInt(document.getElementById('fontSizeCertNo').value);
+      state.layouts[cat].colorCertNo = document.getElementById('colorCertNo').value;
+      state.layouts[cat].posXQR = parseInt(document.getElementById('posXQR').value);
+      state.layouts[cat].posYQR = parseInt(document.getElementById('posYQR').value);
+
+      saveLayoutSettings();
+      renderCertCanvas();
+    }
+
+    // CANVAS IMAGE COMPRESSION LOGIC (MAX 1600px width, JPEG 82% quality ~300-500KB)
     function handleBgImageUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
 
-      const category = document.getElementById('editorCategorySelect').value;
+      const cat = document.getElementById('editorCategorySelect').value;
       const reader = new FileReader();
+
       reader.onload = function(evt) {
-        const img = new Image();
-        img.onload = function() {
-          state.customBgImages[category] = img;
-          renderCertCanvas();
-          showToast(`Background custom ${category} berhasil diunggah!`, "success");
+        const tempImg = new Image();
+        tempImg.onload = function() {
+          const offCanvas = document.createElement('canvas');
+          let width = tempImg.width;
+          let height = tempImg.height;
+          const maxWidth = 1600;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          offCanvas.width = width;
+          offCanvas.height = height;
+          const offCtx = offCanvas.getContext('2d');
+          offCtx.drawImage(tempImg, 0, 0, width, height);
+
+          // Compress to JPEG 82%
+          const compressedDataUrl = offCanvas.toDataURL('image/jpeg', 0.82);
+
+          const finalImg = new Image();
+          finalImg.onload = function() {
+            state.loadedBgImages[cat] = finalImg;
+            if (!state.layouts[cat]) state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat] };
+            state.layouts[cat].bgImage = compressedDataUrl;
+
+            saveLayoutSettings();
+            document.getElementById('bgRemoveContainer').classList.remove('hidden');
+            renderCertCanvas();
+            showToast(`Background custom kategori ${cat} tersimpan permanen!`, "success");
+          };
+          finalImg.src = compressedDataUrl;
         };
-        img.src = evt.target.result;
+        tempImg.src = evt.target.result;
       };
       reader.readAsDataURL(file);
     }
 
+    function removeCategoryBgImage() {
+      const cat = document.getElementById('editorCategorySelect').value;
+      if (state.layouts[cat]) {
+        state.layouts[cat].bgImage = null;
+        delete state.loadedBgImages[cat];
+        saveLayoutSettings();
+        document.getElementById('bgRemoveContainer').classList.add('hidden');
+        renderCertCanvas();
+        showToast(`Background custom kategori ${cat} berhasil dihapus`, "info");
+      }
+    }
+
+    function resetCategoryLayout() {
+      const cat = document.getElementById('editorCategorySelect').value;
+      state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat], bgImage: state.layouts[cat]?.bgImage || null };
+      saveLayoutSettings();
+      onEditorCategoryChange();
+      showToast(`Layout posisi kategori ${cat} direset ke default`, "info");
+    }
+
+    // REAL-TIME CANVAS CERTIFICATE RENDERER
     function renderCertCanvas(sampleCert = null) {
       const canvas = document.getElementById('certCanvas');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
 
       const category = document.getElementById('editorCategorySelect')?.value || 'Peserta';
-      const posYName = parseInt(document.getElementById('posYName')?.value || '380');
-      const fontSizeName = parseInt(document.getElementById('fontSizeName')?.value || '42');
-      const posYSchool = parseInt(document.getElementById('posYSchool')?.value || '450');
-      const fontSizeSchool = parseInt(document.getElementById('fontSizeSchool')?.value || '24');
-      const posXQR = parseInt(document.getElementById('posXQR')?.value || '950');
-      const posYQR = parseInt(document.getElementById('posYQR')?.value || '650');
-
-      const showCertNo = document.getElementById('showCertNo')?.checked ?? true;
-      const posXCertNo = parseInt(document.getElementById('posXCertNo')?.value || '600');
-      const posYCertNo = parseInt(document.getElementById('posYCertNo')?.value || '330');
-      const fontSizeCertNo = parseInt(document.getElementById('fontSizeCertNo')?.value || '18');
-      const colorCertNo = document.getElementById('colorCertNo')?.value || '#334155';
+      const layout = state.layouts[category] || DEFAULT_LAYOUTS[category];
 
       const cert = sampleCert || state.certificates.find(c => c.category === category) || {
         name: "FAEYZA KENZIE GIAR PRAMIYADI", 
@@ -1632,9 +1781,9 @@
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Render Custom Image Background OR Fallback Frame
-      if (state.customBgImages[category]) {
-        ctx.drawImage(state.customBgImages[category], 0, 0, canvas.width, canvas.height);
+      // Render Custom Compressed Background OR Fallback Frame
+      if (state.loadedBgImages[category]) {
+        ctx.drawImage(state.loadedBgImages[category], 0, 0, canvas.width, canvas.height);
       } else {
         ctx.fillStyle = "#fdfbf7";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1657,29 +1806,29 @@
         ctx.fillText(`KEMBARANAS III SAKO SIT - ${category.toUpperCase()}`, canvas.width / 2, 215);
       }
 
-      // Render Single Certificate Number (No Overlaps)
-      if (showCertNo) {
+      // Render Certificate Number (Single Source)
+      if (layout.showCertNo) {
         ctx.save();
-        ctx.fillStyle = colorCertNo;
-        ctx.font = `bold ${fontSizeCertNo}px 'Plus Jakarta Sans', monospace, sans-serif`;
+        ctx.fillStyle = layout.colorCertNo || "#334155";
+        ctx.font = `bold ${layout.fontSizeCertNo}px 'Plus Jakarta Sans', monospace, sans-serif`;
         ctx.textAlign = "center";
-        ctx.fillText(`No. ${cert.certNo}`, posXCertNo, posYCertNo);
+        ctx.fillText(`No. ${cert.certNo}`, layout.posXCertNo, layout.posYCertNo);
         ctx.restore();
       }
 
-      // Render Name
+      // Render Recipient Name
       ctx.fillStyle = "#1e1b4b"; 
-      ctx.font = `bold ${fontSizeName}px 'Plus Jakarta Sans', sans-serif`; 
+      ctx.font = `bold ${layout.fontSizeName}px 'Plus Jakarta Sans', sans-serif`; 
       ctx.textAlign = "center";
-      ctx.fillText(cert.name, canvas.width / 2, posYName);
+      ctx.fillText(cert.name, canvas.width / 2, layout.posYName);
 
-      // Render School
+      // Render School / Institution
       ctx.fillStyle = "#475569"; 
-      ctx.font = `500 ${fontSizeSchool}px 'Plus Jakarta Sans', sans-serif`; 
+      ctx.font = `500 ${layout.fontSizeSchool}px 'Plus Jakarta Sans', sans-serif`; 
       ctx.textAlign = "center";
-      ctx.fillText(cert.school, canvas.width / 2, posYSchool);
+      ctx.fillText(cert.school, canvas.width / 2, layout.posYSchool);
 
-      // Render QR Code onto Canvas
+      // Render QR Code onto Canvas Dynamically
       const qrTempDiv = document.createElement('div');
       const shareUrl = getVerificationUrl(cert.numCode);
       new QRCode(qrTempDiv, { text: shareUrl, width: 140, height: 140 });
@@ -1690,10 +1839,10 @@
           const img = new Image();
           img.onload = function() {
             ctx.fillStyle = "#ffffff";
-            ctx.fillRect(posXQR - 10, posYQR - 10, 160, 160);
+            ctx.fillRect(layout.posXQR - 10, layout.posYQR - 10, 160, 160);
             ctx.strokeStyle = "#e2e8f0"; ctx.lineWidth = 2;
-            ctx.strokeRect(posXQR - 10, posYQR - 10, 160, 160);
-            ctx.drawImage(img, posXQR, posYQR, 140, 140);
+            ctx.strokeRect(layout.posXQR - 10, layout.posYQR - 10, 160, 160);
+            ctx.drawImage(img, layout.posXQR, layout.posYQR, 140, 140);
           };
           img.src = qrImg.src;
         }
@@ -1703,15 +1852,19 @@
     function downloadTestCanvasImage() {
       const canvas = document.getElementById('certCanvas');
       const link = document.createElement('a');
-      link.download = `Sertifikat_Tes_Kembaranas.png`;
+      link.download = `Sertifikat_Kembaranas_III.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
-      showToast("Sertifikat berhasil diunduh!", "success");
+      showToast("Sertifikat PNG berhasil diunduh!", "success");
     }
 
     function downloadCertForRecord(id) {
       const rec = state.certificates.find(c => c.id === id);
       if (!rec) return;
+
+      const currentCatSelect = document.getElementById('editorCategorySelect');
+      if (currentCatSelect) currentCatSelect.value = rec.category;
+
       renderCertCanvas(rec);
       setTimeout(() => downloadTestCanvasImage(), 150);
     }
