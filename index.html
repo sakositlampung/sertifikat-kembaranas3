@@ -805,14 +805,53 @@
       checkURLParameters();
     });
 
-    // DYNAMIC VERIFICATION URL FOR QR CODES
-    function getVerificationUrl(numCode) {
-      const baseUrl = window.location.origin + window.location.pathname;
-      return `${baseUrl}?id=${encodeURIComponent(numCode)}`;
+    // UTF-8 SAFE BASE64 ENCODER & DECODER FOR CROSS-DEVICE MOBILE PAYLOADS
+    function encodePayload(obj) {
+      try {
+        const jsonStr = JSON.stringify(obj);
+        return encodeURIComponent(btoa(unescape(encodeURIComponent(jsonStr))));
+      } catch(e) {
+        return "";
+      }
     }
 
-    // LOAD INITIAL DATA FROM LOCAL STORAGE
+    function decodePayload(str) {
+      try {
+        const jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(str))));
+        return JSON.parse(jsonStr);
+      } catch(e) {
+        return null;
+      }
+    }
+
+    // DYNAMIC VERIFICATION URL FOR QR CODES WITH EMBEDDED IDENTITY PAYLOAD
+    function getVerificationUrl(itemOrCode) {
+      const baseUrl = window.location.origin + window.location.pathname;
+      if (typeof itemOrCode === 'object' && itemOrCode !== null) {
+        const miniObj = {
+          id: itemOrCode.numCode || itemOrCode.id,
+          n: itemOrCode.name,
+          s: itemOrCode.school,
+          c: itemOrCode.category,
+          no: itemOrCode.certNo
+        };
+        const payload = encodePayload(miniObj);
+        return `${baseUrl}?id=${encodeURIComponent(itemOrCode.numCode || itemOrCode.id)}&v=${payload}`;
+      } else {
+        const found = state.certificates.find(c => 
+          (c.id && String(c.id).trim().toLowerCase() === String(itemOrCode).trim().toLowerCase()) ||
+          (c.numCode && String(c.numCode).trim().toLowerCase() === String(itemOrCode).trim().toLowerCase())
+        );
+        if (found) return getVerificationUrl(found);
+        return `${baseUrl}?id=${encodeURIComponent(itemOrCode)}`;
+      }
+    }
+
+    // LOAD INITIAL DATA FROM LOCAL STORAGE & PERSISTENT SESSION
     function loadInitialData() {
+      // Restore Admin Persistent Session State
+      state.isAdminLoggedIn = localStorage.getItem('kembaranas_admin_session') === 'true';
+
       const saved = localStorage.getItem('kembaranas_certificates');
       if (saved) {
         try { 
@@ -876,20 +915,51 @@
       }
     }
 
-    // CHECK URL PARAMETERS FOR VERIFICATION SCAN (?id=0001)
+    // CHECK URL PARAMETERS FOR VERIFICATION SCAN (?id=0001 OR ?v=payload)
     function checkURLParameters() {
       const urlParams = new URLSearchParams(window.location.search);
+      const payloadParam = urlParams.get('v');
       const certId = urlParams.get('id') || urlParams.get('no') || urlParams.get('code');
+
+      // 1. Highest Priority: Decode embedded payload parameter (works on smartphones without local storage)
+      if (payloadParam) {
+        const decoded = decodePayload(payloadParam);
+        if (decoded && decoded.n) {
+          state.activeCert = {
+            id: decoded.id || certId || "0000",
+            numCode: decoded.id || certId || "0000",
+            name: decoded.n,
+            school: decoded.s || "-",
+            category: decoded.c || "Peserta",
+            certNo: decoded.no || `${decoded.id}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`,
+            locationDate: "Bandar Lampung, 31 Oktober 2026",
+            sakoOrg: "JSIT Wilayah Lampung",
+            signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III",
+            subject: `Sertifikat ${decoded.c || 'Peserta'} Kembaranas III SAKO SIT`
+          };
+          switchView('public_verification');
+          return;
+        }
+      }
+
+      // 2. Second Priority: Search local dataset
       if (certId) {
         loadCertByCode(certId);
       } else {
-        switchView('public_search');
+        if (state.isAdminLoggedIn && localStorage.getItem('kembaranas_last_view') === 'admin') {
+          switchView('admin');
+        } else {
+          switchView('public_search');
+        }
       }
     }
 
     // VIEW SWITCHER
     function switchView(viewName) {
       state.currentView = viewName;
+      if (state.isAdminLoggedIn) {
+        localStorage.setItem('kembaranas_last_view', viewName);
+      }
       document.getElementById('viewPublicVerification').classList.add('hidden');
       document.getElementById('viewPublicSearch').classList.add('hidden');
       document.getElementById('viewAdminDashboard').classList.add('hidden');
@@ -933,6 +1003,8 @@
           proceedText: "Logout",
           onProceed: () => {
             state.isAdminLoggedIn = false;
+            localStorage.removeItem('kembaranas_admin_session');
+            localStorage.removeItem('kembaranas_last_view');
             showToast("Logout admin berhasil", "info");
             switchView('public_search');
           }
@@ -1056,7 +1128,7 @@
 
     function copyPublicVerificationLink() {
       if (!state.activeCert) return;
-      const shareUrl = getVerificationUrl(state.activeCert.numCode);
+      const shareUrl = getVerificationUrl(state.activeCert);
       
       const tempInput = document.createElement('input');
       tempInput.value = shareUrl;
@@ -1084,6 +1156,7 @@
 
       if (user === 'admin' && pass === 'admin123') {
         state.isAdminLoggedIn = true;
+        localStorage.setItem('kembaranas_admin_session', 'true');
         closeLoginModal();
         showToast("Login berhasil! Selamat datang Admin.", "success");
         switchView('admin');
@@ -1229,7 +1302,7 @@
         if (item.category === 'Panitia') catBadgeClass = "bg-amber-100 text-amber-800";
         if (item.category === 'Petugas Upacara') catBadgeClass = "bg-emerald-100 text-emerald-800";
 
-        const shareUrl = getVerificationUrl(item.numCode);
+        const shareUrl = getVerificationUrl(item);
 
         tr.innerHTML = `
           <td class="py-3 px-3 text-center">
@@ -1828,9 +1901,9 @@
       ctx.textAlign = "center";
       ctx.fillText(cert.school, canvas.width / 2, layout.posYSchool);
 
-      // Render QR Code onto Canvas Dynamically
+      // Render QR Code onto Canvas Dynamically with Embedded Identity Payload
       const qrTempDiv = document.createElement('div');
-      const shareUrl = getVerificationUrl(cert.numCode);
+      const shareUrl = getVerificationUrl(cert);
       new QRCode(qrTempDiv, { text: shareUrl, width: 140, height: 140 });
 
       setTimeout(() => {
