@@ -761,7 +761,7 @@
   <!-- TOAST CONTAINER -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
-  <!-- JAVASCRIPT LOGIC (TERPERBAIKI 100%) -->
+  <!-- JAVASCRIPT LOGIC (PERBAIKAN QR CODE SCAN & PROMISE CANVAS) -->
   <script>
     // INITIAL DEFAULT SAMPLE DATA
     const DEFAULT_CERTIFICATES = [
@@ -869,7 +869,7 @@
       }
     }
 
-    // DYNAMIC VERIFICATION URL FOR QR CODES
+    // DYNAMIC VERIFICATION URL FOR QR CODES (Compact payload format)
     function getVerificationUrl(itemOrCode) {
       const baseUrl = window.location.origin + window.location.pathname;
       if (typeof itemOrCode === 'object' && itemOrCode !== null) {
@@ -1397,7 +1397,7 @@
           const el = document.getElementById(`qr_thumb_${item.id}`);
           if (el) {
             el.innerHTML = '';
-            new QRCode(el, { text: shareUrl, width: 28, height: 28, correctLevel: QRCode.CorrectLevel.L });
+            new QRCode(el, { text: shareUrl, width: 28, height: 28, correctLevel: QRCode.CorrectLevel.M });
           }
         }, 30);
       });
@@ -1636,7 +1636,7 @@
       renderAdminTable();
     }
 
-    // EXCEL FILE IMPORT PARSER (PERBAIKAN LOGIKA APPEND & NOMOR URUT)
+    // EXCEL FILE IMPORT PARSER (APPEND MODE AUTO-INCREMENT LOGIC)
     function handleFileUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1669,10 +1669,8 @@
 
             let numCodeVal;
             if (importMode === 'append') {
-              // MODE APPEND: Selalu gunakan nomor urut lanjutan dari database agar TIDAK TERTIMPA!
               numCodeVal = String(startingSeq + i).padStart(4, '0');
             } else {
-              // MODE OVERWRITE: Gunakan nomor dari Excel atau urutan 1
               if (excelNumCode) numCodeVal = String(excelNumCode).padStart(4, '0');
               else numCodeVal = String(i + 1).padStart(4, '0');
             }
@@ -1772,12 +1770,10 @@
       let updatedCount = 0;
 
       state.importPreviewData.forEach(item => {
-        // Jika mode append, jamin nomor ID tidak bentrok
         let finalNumCode = item.numCode;
         if (!isOverwrite) {
           let existingIdx = state.certificates.findIndex(c => c.id === finalNumCode || c.numCode === finalNumCode);
           if (existingIdx !== -1) {
-            // Jika ada bentrok, otomatis buatkan nomor urut baru di paling akhir
             const nextSeq = getMaxNumCode() + 1;
             finalNumCode = String(nextSeq).padStart(4, '0');
           }
@@ -1829,7 +1825,7 @@
       showToast("Template Excel berhasil diunduh!", "info");
     }
 
-    // CANVAS EDITOR LOGIC (TERPERBAIKI & TERSIMPAN PERMANEN)
+    // CANVAS EDITOR LOGIC
     function onEditorCategoryChange() {
       const cat = document.getElementById('editorCategorySelect').value;
       document.getElementById('canvasCategoryBadge').innerText = cat;
@@ -1946,10 +1942,49 @@
       showToast(`Layout posisi kategori ${cat} direset ke default`, "info");
     }
 
-    // REAL-TIME CANVAS CERTIFICATE RENDERER
-    function renderCertCanvas(sampleCert = null) {
+    // PROMISE-BASED QR CODE CANVAS GENERATOR (HIGH QUALITY & FAST HP SCANNING)
+    function generateQRCanvasElement(text, size = 160) {
+      return new Promise((resolve) => {
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.top = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        new QRCode(tempDiv, {
+          text: text,
+          width: size,
+          height: size,
+          correctLevel: QRCode.CorrectLevel.M
+        });
+
+        let attempts = 0;
+        const check = () => {
+          attempts++;
+          const qrCanvas = tempDiv.querySelector('canvas');
+          const qrImg = tempDiv.querySelector('img');
+
+          if (qrCanvas && qrCanvas.width > 0) {
+            document.body.removeChild(tempDiv);
+            resolve(qrCanvas);
+          } else if (qrImg && qrImg.complete && qrImg.naturalWidth > 0) {
+            document.body.removeChild(tempDiv);
+            resolve(qrImg);
+          } else if (attempts < 50) {
+            setTimeout(check, 15);
+          } else {
+            if (tempDiv.parentNode) document.body.removeChild(tempDiv);
+            resolve(null);
+          }
+        };
+        check();
+      });
+    }
+
+    // REAL-TIME CANVAS CERTIFICATE RENDERER (PROMISE ASYNCHRONOUS SAFE)
+    async function renderCertCanvas(sampleCert = null) {
       const canvas = document.getElementById('certCanvas');
-      if (!canvas) return;
+      if (!canvas) return null;
       const ctx = canvas.getContext('2d');
 
       const category = document.getElementById('editorCategorySelect')?.value || 'Peserta';
@@ -1965,6 +2000,7 @@
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // Draw Background Image or Fallback Template
       if (state.loadedBgImages[category]) {
         ctx.drawImage(state.loadedBgImages[category], 0, 0, canvas.width, canvas.height);
       } else {
@@ -1980,7 +2016,7 @@
         ctx.fillStyle = "#fa4622";
         ctx.beginPath(); ctx.arc(canvas.width / 2, 85, 45, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = "#ffffff"; ctx.font = "bold 28px FontAwesome"; ctx.textAlign = "center";
-        ctx.fillText("\uf6ec", canvas.width / 2, 94);
+        ctx.fillText("", canvas.width / 2, 94);
 
         ctx.fillStyle = "#0f172a"; ctx.font = "bold 32px 'Plus Jakarta Sans', sans-serif";
         ctx.fillText("SERTIFIKAT PENGHARGAAN", canvas.width / 2, 180);
@@ -1989,6 +2025,7 @@
         ctx.fillText(`KEMBARANAS III SAKO SIT - ${category.toUpperCase()}`, canvas.width / 2, 215);
       }
 
+      // Draw Cert No
       if (layout.showCertNo) {
         ctx.save();
         ctx.fillStyle = layout.colorCertNo || "#334155";
@@ -1998,58 +2035,72 @@
         ctx.restore();
       }
 
+      // Draw Name
       ctx.fillStyle = "#1e1b4b"; 
       ctx.font = `bold ${layout.fontSizeName}px 'Plus Jakarta Sans', sans-serif`; 
       ctx.textAlign = "center";
       ctx.fillText(cert.name, canvas.width / 2, layout.posYName);
 
+      // Draw School
       ctx.fillStyle = "#475569"; 
       ctx.font = `500 ${layout.fontSizeSchool}px 'Plus Jakarta Sans', sans-serif`; 
       ctx.textAlign = "center";
       ctx.fillText(cert.school, canvas.width / 2, layout.posYSchool);
 
-      const qrTempDiv = document.createElement('div');
+      // Render High Precision QR Code with White Quiet Zone (Margin Putih Pemindai HP)
       const shareUrl = getVerificationUrl(cert);
-      new QRCode(qrTempDiv, { text: shareUrl, width: 140, height: 140 });
+      const qrElement = await generateQRCanvasElement(shareUrl, 140);
 
-      setTimeout(() => {
-        const qrImg = qrTempDiv.querySelector('img');
-        if (qrImg && qrImg.src) {
-          const img = new Image();
-          img.onload = function() {
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(layout.posXQR - 10, layout.posYQR - 10, 160, 160);
-            ctx.strokeStyle = "#e2e8f0"; ctx.lineWidth = 2;
-            ctx.strokeRect(layout.posXQR - 10, layout.posYQR - 10, 160, 160);
-            ctx.drawImage(img, layout.posXQR, layout.posYQR, 140, 140);
-          };
-          img.src = qrImg.src;
-        }
-      }, 50);
+      if (qrElement) {
+        const qrSize = 140;
+        const padding = 12; // ISO standard Quiet Zone
+        const totalSize = qrSize + (padding * 2);
+        const boxX = layout.posXQR - padding;
+        const boxY = layout.posYQR - padding;
+
+        // Draw White Quiet Zone Background & Border
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(boxX, boxY, totalSize, totalSize);
+        ctx.strokeStyle = "#E2E8F0"; 
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(boxX, boxY, totalSize, totalSize);
+
+        // Turn off smoothing for crisp QR code pixels
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(qrElement, layout.posXQR, layout.posYQR, qrSize, qrSize);
+        ctx.imageSmoothingEnabled = true;
+      }
+
+      return canvas;
     }
 
-    function downloadTestCanvasImage() {
+    async function downloadTestCanvasImage(certObj = null) {
+      await renderCertCanvas(certObj);
       const canvas = document.getElementById('certCanvas');
+      if (!canvas) return;
+
+      const certName = certObj ? certObj.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Kembaranas_III';
       const link = document.createElement('a');
-      link.download = `Sertifikat_Kembaranas_III.png`;
+      link.download = `Sertifikat_${certName}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
       showToast("Sertifikat PNG berhasil diunduh!", "success");
     }
 
-    function downloadCertForRecord(id) {
+    async function downloadCertForRecord(id) {
       const rec = state.certificates.find(c => c.id === id);
       if (!rec) return;
 
       const currentCatSelect = document.getElementById('editorCategorySelect');
       if (currentCatSelect) currentCatSelect.value = rec.category;
 
-      renderCertCanvas(rec);
-      setTimeout(() => downloadTestCanvasImage(), 150);
+      await downloadTestCanvasImage(rec);
     }
 
-    function downloadActivePublicCert() {
-      if (state.activeCert) downloadCertForRecord(state.activeCert.id);
+    async function downloadActivePublicCert() {
+      if (state.activeCert) {
+        await downloadCertForRecord(state.activeCert.id);
+      }
     }
 
     // CONFIRMATION DIALOG
