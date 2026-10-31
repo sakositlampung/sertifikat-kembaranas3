@@ -1,1181 +1,2109 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sertifikat Kembaranas III - Verifikasi & Generator</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aplikasi Sertifikat Kembaranas III - SAKO SIT</title>
+
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Cinzel -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cinzel:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- SheetJS (Excel Parser & Generator) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <!-- QRCode.js (Library Pembuat QR Code Client-Side) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              red: '#fa4622',
+              deepred: '#ea2e0c',
+              darkred: '#d01f00',
+              gold: '#d97706',
+              navy: '#0f172a'
+            }
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            serif: ['Cinzel', 'serif']
+          }
+        }
+      }
+    }
+  </script>
+
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .bg-kembaranas-red { background-color: #ff3b19; }
-    .toast-animate { transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+    /* Custom Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    
+    /* Animation Transitions */
+    .toast-enter {
+      animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .modal-scale-up {
+      animation: modalScale 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes modalScale {
+      from { transform: scale(0.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col justify-between">
+<body class="bg-gray-100 font-sans text-gray-900 antialiased min-h-screen flex flex-col">
 
-  <!-- Container Notifikasi Toast Kustom -->
-  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-  <!-- Modal Konfirmasi Kustom -->
-  <div id="customConfirmModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all scale-95 opacity-0 duration-200" id="confirmModalCard">
-      <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4 text-2xl font-bold">!</div>
-      <h3 class="text-xl font-bold text-gray-900 mb-2" id="confirmTitle">Konfirmasi</h3>
-      <p class="text-gray-600 text-sm mb-6" id="confirmMessage">Apakah Anda yakin ingin melanjutkan?</p>
-      <div class="flex justify-end gap-3">
-        <button id="confirmBtnCancel" class="px-4 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-50 transition">Batal</button>
-        <button id="confirmBtnOk" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm shadow-md transition">Ya, Lanjutkan</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Admin Login -->
-  <div id="loginModal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl border border-gray-100">
-      <div class="text-center mb-6">
-        <div class="w-16 h-16 bg-gradient-to-tr from-orange-500 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-orange-500/30 text-white font-black text-2xl">K3</div>
-        <h2 class="text-2xl font-bold text-gray-900">Login Administrator</h2>
-        <p class="text-gray-500 text-xs mt-1">Masuk untuk mengelola data & template sertifikat</p>
-      </div>
-      <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Username / Email</label>
-          <input type="text" id="loginUser" required class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm" placeholder="Masukkan username">
+  <!-- TOP NAVIGATION BAR -->
+  <header id="appHeader" class="bg-brand-navy text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Logo & Title -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('public_search')">
+        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-red to-amber-500 flex items-center justify-center text-white shadow-sm font-bold border border-white/20">
+          <i class="fa-solid fa-tent text-lg"></i>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Password</label>
-          <input type="password" id="loginPass" required class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm" placeholder="••••••••">
-        </div>
-        <div class="flex items-center justify-between pt-2">
-          <button type="button" onclick="closeLoginModal()" class="px-4 py-2.5 text-gray-500 text-sm font-semibold hover:text-gray-700">Tutup</button>
-          <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/30 transition">Masuk Dashboard</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Header Utama -->
-  <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-3 cursor-pointer" onclick="goHome()">
-        <div class="w-10 h-10 bg-gradient-to-tr from-orange-500 to-red-600 rounded-xl flex items-center justify-center font-black text-xl shadow-md">K3</div>
-        <div>
-          <h1 class="font-extrabold text-base tracking-wide leading-tight">KEMBARANAS III</h1>
-          <p class="text-[10px] text-orange-400 font-medium tracking-wider">SAKO PRAMUKA SIT INDONESIA</p>
+          <h1 class="font-bold text-base sm:text-lg leading-tight tracking-wide">KEMBARANAS III</h1>
+          <p class="text-[11px] text-gray-300">SAKO SIT Indonesia</p>
         </div>
       </div>
-      <div class="flex items-center gap-2" id="headerNavRight">
-        <button onclick="switchTab('public')" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition flex items-center gap-1.5">
-          🔍 Cek Sertifikat
+
+      <!-- Action Buttons -->
+      <div id="navRightButtons" class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Quick Search -->
+        <button onclick="switchView('public_search')" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs sm:text-sm font-medium transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <span class="hidden sm:inline">Cek Sertifikat</span>
         </button>
-        <button id="adminAuthBtn" onclick="toggleAdminAuth()" class="px-4 py-1.5 text-xs font-bold rounded-lg bg-orange-600 hover:bg-orange-500 text-white shadow-md transition">
-          🔒 Login Admin
+
+        <!-- Admin Auth Button -->
+        <button id="btnAdminAuth" onclick="handleAdminAuthClick()" class="px-3 py-1.5 rounded-lg bg-brand-red hover:bg-brand-darkred text-white text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 shadow">
+          <i id="btnAdminIcon" class="fa-solid fa-lock"></i>
+          <span id="btnAdminText">Login Admin</span>
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Konten Utama (Switchable Tabs) -->
-  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+  <!-- MAIN APPLICATION CONTENT -->
+  <main class="flex-grow flex flex-col">
 
-    <!-- TAB 1: VERIFIKASI PUBLIK (DESAIN MERAH JSIT) -->
-    <section id="tabPublic" class="max-w-xl mx-auto py-4">
-      <div class="bg-kembaranas-red rounded-3xl p-6 md:p-8 text-white shadow-2xl text-center border-4 border-orange-400/30">
-        <!-- Logo Emblem Public Header -->
-        <div class="w-24 h-24 bg-white rounded-full mx-auto mb-4 p-2 shadow-xl flex items-center justify-center border-4 border-orange-200">
-          <div class="w-full h-full rounded-full border-2 border-dashed border-red-500 flex flex-col items-center justify-center text-red-600">
-            <span class="text-[9px] font-black leading-none">ISLAMIC</span>
-            <span class="text-xs font-extrabold leading-none text-orange-500">YOUTH</span>
-            <span class="text-[9px] font-black leading-none">FESTIVAL</span>
+    <!-- VIEW 1: PUBLIC VERIFICATION PAGE (REPLIKA DESAIN JSIT MERAH ORANYE) -->
+    <section id="viewPublicVerification" class="hidden flex-grow bg-gradient-to-b from-[#fa4622] via-[#f03212] to-[#d82103] py-10 px-4 flex flex-col items-center justify-center">
+      
+      <!-- Logo Emblem Top -->
+      <div class="mb-6 text-center">
+        <div class="w-24 h-24 sm:w-28 sm:h-28 bg-white rounded-full mx-auto flex items-center justify-center p-2 shadow-xl border-4 border-white/30">
+          <div class="w-full h-full rounded-full bg-gradient-to-tr from-amber-500 via-brand-red to-red-700 flex flex-col items-center justify-center text-white text-center p-1 border border-amber-300">
+            <i class="fa-solid fa-award text-2xl sm:text-3xl mb-0.5 text-yellow-200"></i>
+            <span class="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-tighter leading-none">KEMBARANAS III</span>
+            <span class="text-[6px] sm:text-[7px] font-semibold text-amber-100 tracking-wider">SAKO SIT 2026</span>
           </div>
         </div>
+        <h2 class="text-white text-xl sm:text-2xl md:text-3xl font-extrabold tracking-wider uppercase mt-4 drop-shadow-md">
+          INFORMASI SERTIFIKAT
+        </h2>
+      </div>
 
-        <h2 class="text-2xl md:text-3xl font-black uppercase tracking-wider mb-6 drop-shadow-md">INFORMASI SERTIFIKAT</h2>
-
-        <!-- Search Bar ID Sertifikat -->
-        <div class="mb-6 flex gap-2 max-w-md mx-auto">
-          <input type="text" id="publicSearchInput" placeholder="Masukkan 4 digit nomor (misal: 0001)" class="w-full px-4 py-2.5 rounded-xl text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-yellow-400 shadow-inner">
-          <button onclick="searchPublicCert()" class="px-5 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-extrabold text-sm rounded-xl shadow-md transition shrink-0">Cari</button>
+      <!-- Verified Information Card -->
+      <div class="w-full max-w-lg bg-white rounded-xl shadow-2xl overflow-hidden border border-white/50 transition-all duration-300">
+        <div class="p-6 sm:p-8 space-y-4 text-gray-800" id="publicCertCardContent">
+          <!-- Dynamically populated by JS -->
         </div>
 
-        <!-- Card Kartu Identitas Verifikasi -->
-        <div id="certIdentityCard" class="bg-white rounded-2xl p-6 text-left text-gray-800 shadow-2xl space-y-4 border border-gray-100">
-          <div>
-            <div class="flex items-center gap-2 text-xs font-bold text-gray-500 mb-0.5">
-              <span>📄</span> No.Sertifikat
-            </div>
-            <div class="text-sm md:text-base font-extrabold text-gray-900" id="vCertNo">No. 0001 -0247/KEMBARANAS-III/SAKO-SIT/X/2026</div>
-          </div>
-          <hr class="border-gray-200">
-          <div>
-            <div class="flex items-center gap-2 text-xs font-bold text-gray-500 mb-0.5">
-              <span>📅</span> Kabupaten/Kota, Tanggal
-            </div>
-            <div class="text-sm font-semibold text-gray-800" id="vDate">Bandar Lampung, 31 Oktober 2026</div>
-          </div>
-          <hr class="border-gray-200">
-          <div>
-            <div class="flex items-center gap-2 text-xs font-bold text-gray-500 mb-0.5">
-              <span>🏫</span> JSIT / Asal Sekolah
-            </div>
-            <div class="text-sm font-bold text-gray-900" id="vSchool">SMAIT Ummul Quro Bogor</div>
-          </div>
-          <hr class="border-gray-200">
-          <div>
-            <div class="flex items-center gap-2 text-xs font-bold text-gray-500 mb-0.5">
-              <span>📝</span> Ditandatangani oleh
-            </div>
-            <div class="text-sm font-semibold text-gray-800" id="vSigner">Ketua Panitia Kembaranas III SAKO SIT</div>
-          </div>
-          <hr class="border-gray-200">
-          <div>
-            <div class="flex items-center gap-2 text-xs font-bold text-gray-500 mb-0.5">
-              <span>✉️</span> Perihal / Kategori
-            </div>
-            <div class="text-sm font-semibold text-gray-800" id="vSubject">Sertifikat Peserta Kembaranas III</div>
-          </div>
-          <hr class="border-gray-200">
-          <div>
-            <div class="flex items-center gap-2 text-xs font-bold text-gray-500 mb-0.5">
-              <span>🚀</span> Ditujukan Kepada
-            </div>
-            <div class="text-base font-black text-orange-600" id="vRecipient">FAEYZA KENZIE GIAR PRAMIYADI</div>
+        <!-- Verification Footer -->
+        <div class="bg-emerald-50 border-t border-emerald-100 p-4 text-center flex items-center justify-center space-x-2 text-emerald-800 text-xs sm:text-sm font-semibold">
+          <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
+          <span>Sertifikat Terverifikasi Resmi Sistem SAKO SIT</span>
+        </div>
+      </div>
+
+      <!-- Public Action Footer -->
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        <button onclick="downloadActivePublicCert()" class="px-4 py-2 bg-white text-brand-darkred hover:bg-gray-100 rounded-lg text-xs sm:text-sm font-bold shadow transition flex items-center space-x-2">
+          <i class="fa-solid fa-download"></i>
+          <span>Unduh Sertifikat (PNG)</span>
+        </button>
+        <button onclick="copyPublicVerificationLink()" class="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-2 backdrop-blur-sm">
+          <i class="fa-solid fa-link"></i>
+          <span>Salin Tautan Verifikasi</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- VIEW 2: PUBLIC SEARCH PAGE -->
+    <section id="viewPublicSearch" class="flex-grow bg-gradient-to-b from-[#fa4622] via-[#f03212] to-[#d82103] py-12 px-4 flex flex-col items-center justify-center text-white">
+      <div class="max-w-xl w-full text-center space-y-6">
+        <div class="w-20 h-20 bg-white rounded-full mx-auto flex items-center justify-center text-brand-red text-3xl shadow-xl">
+          <i class="fa-solid fa-certificate"></i>
+        </div>
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-wide uppercase">Cek Keaslian Sertifikat</h2>
+          <p class="text-white/80 text-xs sm:text-sm mt-1">Perkemahan Ukhuwah Nasional (KEMBARANAS) III SAKO SIT</p>
+        </div>
+
+        <!-- Search Form -->
+        <div class="bg-white/10 backdrop-blur-md p-2 rounded-2xl border border-white/20 shadow-2xl flex flex-col sm:flex-row gap-2">
+          <input type="text" id="publicSearchInput" placeholder="Masukkan 4 Digit No / Nomor Sertifikat Lengkap..." 
+                 onkeypress="if(event.key==='Enter') searchCertificate()"
+                 class="w-full px-4 py-3 rounded-xl bg-white text-gray-800 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+          <button onclick="searchCertificate()" class="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-gray-900 font-bold rounded-xl text-sm transition shadow flex items-center justify-center space-x-2 shrink-0">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span>Cari</span>
+          </button>
+        </div>
+
+        <!-- Demo Quick Links -->
+        <div class="bg-white/10 rounded-xl p-4 border border-white/15 text-left text-xs space-y-2">
+          <p class="font-bold text-amber-200">💡 Sampel Data Sertifikat Kembaranas III:</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-white/90">
+            <button onclick="loadCertByCode('0001')" class="text-left bg-white/10 hover:bg-white/20 p-2 rounded flex items-center justify-between transition">
+              <span>0001 - Faeyza Kenzie (Peserta)</span>
+              <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </button>
+            <button onclick="loadCertByCode('0002')" class="text-left bg-white/10 hover:bg-white/20 p-2 rounded flex items-center justify-between transition">
+              <span>0002 - Ustd. Ahmad Fauzi (Bindamping)</span>
+              <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </button>
+            <button onclick="loadCertByCode('0003')" class="text-left bg-white/10 hover:bg-white/20 p-2 rounded flex items-center justify-between transition">
+              <span>0003 - Siti Nurhaliza (Panitia)</span>
+              <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </button>
+            <button onclick="loadCertByCode('0004')" class="text-left bg-white/10 hover:bg-white/20 p-2 rounded flex items-center justify-between transition">
+              <span>0004 - Muhammad Rizky (Petugas)</span>
+              <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ADMIN PANEL -->
-    <div id="adminPanel" class="hidden space-y-6">
-      
-      <!-- Navigasi Admin Tab -->
-      <div class="bg-white rounded-2xl p-2 shadow-sm border border-gray-200 flex flex-wrap gap-2">
-        <button id="btnTabAdminData" onclick="switchAdminSubTab('data')" class="px-5 py-2.5 rounded-xl text-xs font-bold transition bg-orange-500 text-white shadow-sm">
-          📋 Data Sertifikat
-        </button>
-        <button id="btnTabAdminCanvas" onclick="switchAdminSubTab('canvas')" class="px-5 py-2.5 rounded-xl text-xs font-bold transition text-gray-600 hover:bg-gray-100">
-          🎨 Canvas Editor & Template
-        </button>
+    <!-- VIEW 3: ADMIN DASHBOARD -->
+    <section id="viewAdminDashboard" class="hidden flex-grow bg-gray-50 flex flex-col">
+      <!-- Admin Navigation Sub-Header -->
+      <div class="bg-white border-b border-gray-200 sticky top-16 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between py-2 gap-3">
+          <div class="flex items-center space-x-2">
+            <span class="px-2.5 py-1 bg-brand-red/10 text-brand-red rounded-md text-xs font-bold uppercase tracking-wider">
+              <i class="fa-solid fa-shield-halved mr-1"></i> Admin Panel
+            </span>
+            <span class="text-xs text-gray-500 hidden sm:inline">| Sertifikat Kembaranas III</span>
+          </div>
+
+          <!-- Admin Tabs -->
+          <div class="flex items-center space-x-1 sm:space-x-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+            <button onclick="switchAdminTab('data')" id="tabBtnData" class="admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white">
+              <i class="fa-solid fa-table-list"></i>
+              <span>Data Sertifikat</span>
+            </button>
+            <button onclick="switchAdminTab('import')" id="tabBtnImport" class="admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 transition flex items-center space-x-1.5">
+              <i class="fa-solid fa-file-excel"></i>
+              <span>Import Excel</span>
+            </button>
+            <button onclick="switchAdminTab('template')" id="tabBtnTemplate" class="admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 transition flex items-center space-x-1.5">
+              <i class="fa-solid fa-pen-ruler"></i>
+              <span>Canvas Editor</span>
+            </button>
+            <button onclick="switchAdminTab('guide')" id="tabBtnGuide" class="admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 transition flex items-center space-x-1.5">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>GitHub & Firebase</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <!-- SUB-TAB 1: DATA SERTIFIKAT -->
-      <section id="subTabAdminData" class="space-y-4">
-        
-        <!-- Action Header Top -->
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div>
-            <h2 class="text-lg font-bold text-gray-900">Kelola Data Sertifikat</h2>
-            <p class="text-xs text-gray-500">Kelola data peserta, bindamping, panitia, dan petugas upacara.</p>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <button onclick="openImportModal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
-              📥 Import Excel / CSV
-            </button>
-            <button onclick="openAddModal()" class="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
-              ➕ Tambah Manual
-            </button>
-            <button onclick="exportExcel()" class="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl border border-gray-300 transition">
-              📤 Export Excel
-            </button>
-          </div>
-        </div>
+      <!-- ADMIN CONTAINER CONTENT -->
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-4">
 
-        <!-- Filter & Bulk Toolbar -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 space-y-3">
-          <div class="flex flex-col md:flex-row gap-3 justify-between items-center">
-            <div class="flex items-center gap-2 w-full md:w-auto">
-              <input type="text" id="adminSearchInput" oninput="renderAdminTable()" placeholder="Cari nama atau asal sekolah..." class="px-3.5 py-2 rounded-xl border border-gray-300 text-xs w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-orange-500">
-              <select id="categoryFilter" onchange="renderAdminTable()" class="px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500">
-                <option value="ALL">Semua Kategori</option>
-                <option value="Peserta">Peserta</option>
-                <option value="Bindamping">Bindamping</option>
-                <option value="Panitia">Panitia</option>
-                <option value="Petugas Upacara">Petugas Upacara</option>
-              </select>
+        <!-- TAB 1: DATA SERTIFIKAT -->
+        <div id="adminTabData" class="space-y-4">
+          
+          <!-- Filters & Actions Bar -->
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-3">
+            <div class="flex flex-col md:flex-row gap-3 items-center justify-between">
+              <!-- Search Box -->
+              <div class="relative w-full md:w-80">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input type="text" id="adminSearchInput" oninput="onSearchChange()" placeholder="Cari Nama, Sekolah, No Sertifikat..."
+                       class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-red">
+              </div>
+
+              <!-- Category Buttons -->
+              <div class="flex items-center space-x-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+                <button onclick="setCategoryFilter('ALL')" id="filterAll" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-navy text-white shadow-sm shrink-0">
+                  Semua (<span id="countAll">0</span>)
+                </button>
+                <button onclick="setCategoryFilter('Peserta')" id="filterPeserta" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 border border-gray-200 shrink-0">
+                  Peserta (<span id="countPeserta">0</span>)
+                </button>
+                <button onclick="setCategoryFilter('Bindamping')" id="filterBindamping" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 border border-gray-200 shrink-0">
+                  Bindamping (<span id="countBindamping">0</span>)
+                </button>
+                <button onclick="setCategoryFilter('Panitia')" id="filterPanitia" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 border border-gray-200 shrink-0">
+                  Panitia (<span id="countPanitia">0</span>)
+                </button>
+                <button onclick="setCategoryFilter('Petugas Upacara')" id="filterPetugas" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 border border-gray-200 shrink-0">
+                  Petugas Upacara (<span id="countPetugas">0</span>)
+                </button>
+              </div>
+
+              <!-- Buttons -->
+              <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
+                <button onclick="exportDataToExcel()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition flex items-center space-x-1.5 shadow-sm">
+                  <i class="fa-solid fa-file-export"></i>
+                  <span>Export Excel</span>
+                </button>
+                <button onclick="openAddModal()" class="px-3.5 py-2 bg-brand-red hover:bg-brand-darkred text-white text-xs font-bold rounded-lg transition flex items-center space-x-1.5 shadow">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Tambah Data</span>
+                </button>
+              </div>
             </div>
 
-            <!-- Toolbar Aksi Ceklist / Bulk -->
-            <div id="bulkToolbar" class="hidden flex items-center gap-2 bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-200">
-              <span class="text-xs font-bold text-orange-700" id="bulkCountText">0 terpilih</span>
-              <button onclick="bulkDelete()" class="px-3 py-1 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg shadow-sm transition">
-                🗑️ Hapus Terpilih
+            <!-- BULK ACTION BAR -->
+            <div id="bulkActionBar" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-lg flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center space-x-2 text-amber-900 text-xs font-bold">
+                <i class="fa-solid fa-list-check text-amber-600 text-base"></i>
+                <span><span id="selectedCountBadge">0</span> Data Dipilih dari Tabel</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button onclick="exportSelectedData()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-md transition flex items-center space-x-1">
+                  <i class="fa-solid fa-file-excel"></i>
+                  <span>Export Terpilih</span>
+                </button>
+                <button onclick="confirmBulkDelete()" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-md transition flex items-center space-x-1">
+                  <i class="fa-solid fa-trash-can"></i>
+                  <span>Hapus Terpilih</span>
+                </button>
+                <button onclick="clearSelection()" class="px-2.5 py-1.5 border border-amber-300 text-amber-800 hover:bg-amber-100 text-xs font-semibold rounded-md transition">
+                  Batal
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            
+            <!-- TOP PAGINATION BAR CONTROL -->
+            <div class="p-3.5 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-600">
+              <div class="flex items-center space-x-3">
+                <span class="flex items-center space-x-1.5">
+                  <span class="font-medium">Tampilkan</span>
+                  <select id="pageSizeSelect" onchange="changePageSize(this.value)" class="px-2 py-1 border border-gray-300 rounded-md font-bold focus:outline-none focus:ring-2 focus:ring-brand-red bg-white text-gray-800">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                  <span class="font-medium">item / hal</span>
+                </span>
+                <span class="text-gray-300">|</span>
+                <span>Menampilkan <strong id="pageRangeText" class="text-gray-900 font-extrabold">0 - 0</strong> dari <strong id="totalRecordsText" class="text-gray-900 font-extrabold">0</strong> data</span>
+              </div>
+
+              <!-- Page Number Navigation Buttons -->
+              <div id="paginationControls" class="flex items-center space-x-1">
+                <!-- Dynamically rendered by JS -->
+              </div>
+            </div>
+
+            <!-- TABLE CONTENT -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs sm:text-sm">
+                <thead class="bg-gray-100 border-b border-gray-200 text-gray-600 uppercase font-semibold text-[11px] tracking-wider">
+                  <tr>
+                    <th class="py-3.5 px-3 text-center w-10">
+                      <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" 
+                             class="rounded border-gray-300 text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer">
+                    </th>
+                    <th class="py-3.5 px-3 w-12 text-center">No</th>
+                    <th class="py-3.5 px-4">Nomor Sertifikat</th>
+                    <th class="py-3.5 px-4">Nama Lengkap</th>
+                    <th class="py-3.5 px-4">Asal Sekolah / Instansi</th>
+                    <th class="py-3.5 px-4">Kategori</th>
+                    <th class="py-3.5 px-4 text-center">Barcode</th>
+                    <th class="py-3.5 px-4 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="adminDataTableBody" class="divide-y divide-gray-200 text-gray-700">
+                  <!-- JS Dynamic Rows -->
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- TAB 2: EXCEL IMPORT -->
+        <div id="adminTabImport" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
+            <div class="border-b border-gray-200 pb-4 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+              <div>
+                <h3 class="text-base font-bold text-gray-900 flex items-center space-x-2">
+                  <i class="fa-solid fa-file-excel text-emerald-600 text-xl"></i>
+                  <span>Import Data dari File Excel (.xlsx / .csv)</span>
+                </h3>
+                <p class="text-xs text-gray-500 mt-0.5">Unggah file Excel untuk secara otomatis membuat nomor sertifikat unik dan QR Code.</p>
+              </div>
+
+              <button onclick="downloadExcelTemplate()" class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 text-xs font-bold rounded-lg transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-download"></i>
+                <span>Unduh Format Template Excel</span>
               </button>
             </div>
-          </div>
 
-          <!-- TOP PAGINATION CONTROLS (DI ATAS TABEL DATA) -->
-          <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2 border-t border-gray-100">
-            <div class="flex items-center gap-2 text-xs text-gray-600">
-              <span>Tampilkan</span>
-              <select id="pageSizeSelect" onchange="changePageSize()" class="px-2 py-1 rounded-lg border border-gray-300 text-xs font-bold focus:outline-none">
-                <option value="10">10</option>
-                <option value="25" selected>25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
-              <span>data per halaman</span>
+            <!-- Upload Zone -->
+            <div class="border-2 border-dashed border-gray-300 hover:border-brand-red rounded-xl p-8 text-center bg-gray-50 hover:bg-red-50/30 transition cursor-pointer" onclick="document.getElementById('excelFileInput').click()">
+              <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
+              <div class="space-y-2">
+                <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full mx-auto flex items-center justify-center text-2xl">
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <p class="text-sm font-semibold text-gray-800">Klik untuk memilih file Excel atau seret file ke sini</p>
+                <p class="text-xs text-gray-500">Format kolom: <strong>Nama Lengkap / Nama</strong>, <strong>Asal Sekolah / Sekolah</strong>, <strong>Kategori</strong>, <strong>No Urut</strong></p>
+              </div>
             </div>
 
-            <div class="flex items-center gap-3">
-              <span class="text-xs font-medium text-gray-500" id="pageInfoText">Menampilkan 0 - 0 dari 0 data</span>
-              <div class="flex items-center gap-1">
-                <button id="btnPrevPage" onclick="prevPage()" class="px-3 py-1 rounded-lg border border-gray-300 text-xs font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">Prev</button>
-                <span id="currentPageBadge" class="px-3 py-1 bg-orange-100 text-orange-700 font-extrabold text-xs rounded-lg">1</span>
-                <button id="btnNextPage" onclick="nextPage()" class="px-3 py-1 rounded-lg border border-gray-300 text-xs font-bold hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
+            <!-- Opsi Import Mode -->
+            <div class="bg-amber-50/60 p-4 rounded-xl border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div class="space-y-0.5">
+                <span class="font-bold text-gray-800 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-sliders text-brand-red"></i>
+                  <span>Mode Import Data:</span>
+                </span>
+                <p class="text-gray-500 text-[11px]">Pilih apakah data baru ditambahkan melanjutkan nomor urut atau menimpa data lama.</p>
+              </div>
+              <div class="flex items-center space-x-3 bg-white p-2 rounded-lg border border-gray-300 shadow-sm">
+                <label class="flex items-center space-x-1.5 cursor-pointer font-bold text-emerald-700">
+                  <input type="radio" name="importMode" value="append" checked class="text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                  <span>Tambahkan Data (Append)</span>
+                </label>
+                <span class="text-gray-300">|</span>
+                <label class="flex items-center space-x-1.5 cursor-pointer font-bold text-red-600">
+                  <input type="radio" name="importMode" value="overwrite" class="text-red-600 focus:ring-red-500 w-4 h-4">
+                  <span>Timpa Semua (Overwrite)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Preview Data Excel -->
+            <div id="importPreviewContainer" class="hidden space-y-4 pt-4 border-t border-gray-200">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div class="flex items-center space-x-2">
+                  <h4 class="text-sm font-bold text-gray-800">Preview Data Excel (<span id="importPreviewCount">0</span> baris)</h4>
+                  <div id="importModeInfoBadge"></div>
+                </div>
+                <button onclick="processBatchImport()" class="px-4 py-2 bg-brand-red hover:bg-brand-darkred text-white text-xs font-bold rounded-lg shadow transition flex items-center space-x-2">
+                  <i class="fa-solid fa-check"></i>
+                  <span>Proses & Simpan Ke Database</span>
+                </button>
+              </div>
+
+              <div class="max-h-72 overflow-y-auto border border-gray-200 rounded-lg">
+                <table class="w-full text-xs text-left">
+                  <thead class="bg-gray-100 font-bold text-gray-700 sticky top-0">
+                    <tr>
+                      <th class="p-2 border-b">No</th>
+                      <th class="p-2 border-b">Nama Lengkap</th>
+                      <th class="p-2 border-b">Asal Sekolah</th>
+                      <th class="p-2 border-b">Kategori</th>
+                      <th class="p-2 border-b">No Urut</th>
+                      <th class="p-2 border-b">No Sertifikat Hasil</th>
+                    </tr>
+                  </thead>
+                  <tbody id="importPreviewTableBody" class="divide-y divide-gray-200">
+                    <!-- Dynamic preview rows -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- TAB 3: CANVAS EDITOR (LAYOUT SAVER PER CATEGORY) -->
+        <div id="adminTabTemplate" class="hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4 lg:col-span-1 max-h-[85vh] overflow-y-auto">
+              <div class="border-b border-gray-200 pb-3 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-gray-900">Pengaturan Layout Canvas</h3>
+                <span id="canvasCategoryBadge" class="text-[10px] bg-brand-red text-white px-2 py-0.5 rounded font-bold uppercase">Peserta</span>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Pilih Kategori Sertifikat:</label>
+                <select id="editorCategorySelect" onchange="onEditorCategoryChange()" class="w-full p-2 border border-gray-300 rounded-lg text-xs font-bold focus:ring-2 focus:ring-brand-red bg-amber-50">
+                  <option value="Peserta">Peserta</option>
+                  <option value="Bindamping">Bindamping</option>
+                  <option value="Panitia">Panitia</option>
+                  <option value="Petugas Upacara">Petugas Upacara</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Upload Background Custom (Auto Compress JPEG):</label>
+                <input type="file" id="bgImageUpload" accept="image/*" onchange="handleBgImageUpload(event)" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-brand-red/10 file:text-brand-red">
+                <p class="text-[10px] text-gray-400 mt-1">Sistem otomatis mengompresi gambar ke format JPEG ~500KB agar aman tersimpan permanen di LocalStorage.</p>
+              </div>
+
+              <div id="bgRemoveContainer" class="hidden">
+                <button onclick="removeCategoryBgImage()" class="px-3 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded text-xs font-semibold transition flex items-center space-x-1">
+                  <i class="fa-solid fa-trash-can"></i>
+                  <span>Hapus Background Custom</span>
+                </button>
+              </div>
+
+              <hr class="border-gray-200">
+
+              <div class="space-y-3 text-xs">
+                <!-- 1. KONTROL NAMA -->
+                <p class="font-bold text-gray-800 flex items-center space-x-1">
+                  <i class="fa-solid fa-user text-brand-red"></i>
+                  <span>Posisi & Ukuran Nama Lengkap:</span>
+                </p>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="text-[11px] text-gray-500">Posisi Y:</label>
+                    <input type="range" id="posYName" min="100" max="750" value="380" oninput="onLayoutInputChange()" class="w-full accent-brand-red">
+                  </div>
+                  <div>
+                    <label class="text-[11px] text-gray-500">Ukuran Font:</label>
+                    <input type="number" id="fontSizeName" min="16" max="72" value="42" oninput="onLayoutInputChange()" class="w-full p-1 border rounded text-xs">
+                  </div>
+                </div>
+
+                <!-- 2. KONTROL SEKOLAH -->
+                <p class="font-bold text-gray-800 pt-2 flex items-center space-x-1">
+                  <i class="fa-solid fa-school text-brand-red"></i>
+                  <span>Posisi & Ukuran Asal Sekolah:</span>
+                </p>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="text-[11px] text-gray-500">Posisi Y:</label>
+                    <input type="range" id="posYSchool" min="100" max="750" value="450" oninput="onLayoutInputChange()" class="w-full accent-brand-red">
+                  </div>
+                  <div>
+                    <label class="text-[11px] text-gray-500">Ukuran Font:</label>
+                    <input type="number" id="fontSizeSchool" min="12" max="48" value="24" oninput="onLayoutInputChange()" class="w-full p-1 border rounded text-xs">
+                  </div>
+                </div>
+
+                <!-- 3. KONTROL NOMOR SERTIFIKAT LENGKAP -->
+                <div class="pt-2 border-t border-gray-100">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <p class="font-bold text-gray-800 flex items-center space-x-1">
+                      <i class="fa-solid fa-hashtag text-brand-red"></i>
+                      <span>Posisi & Style Nomor Sertifikat:</span>
+                    </p>
+                    <label class="flex items-center space-x-1 cursor-pointer">
+                      <input type="checkbox" id="showCertNo" checked onchange="onLayoutInputChange()" class="rounded text-brand-red focus:ring-brand-red">
+                      <span class="text-[10px] font-semibold text-gray-600">Tampilkan</span>
+                    </label>
+                  </div>
+
+                  <div class="space-y-2 bg-gray-50 p-2.5 rounded-lg border border-gray-200">
+                    <div class="grid grid-cols-2 gap-2">
+                      <div>
+                        <label class="text-[10px] text-gray-500">Posisi X:</label>
+                        <input type="range" id="posXCertNo" min="50" max="1150" value="600" oninput="onLayoutInputChange()" class="w-full accent-brand-red">
+                      </div>
+                      <div>
+                        <label class="text-[10px] text-gray-500">Posisi Y:</label>
+                        <input type="range" id="posYCertNo" min="30" max="800" value="330" oninput="onLayoutInputChange()" class="w-full accent-brand-red">
+                      </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <div>
+                        <label class="text-[10px] text-gray-500">Ukuran Font:</label>
+                        <input type="number" id="fontSizeCertNo" min="10" max="48" value="18" oninput="onLayoutInputChange()" class="w-full p-1 border rounded text-xs">
+                      </div>
+                      <div>
+                        <label class="text-[10px] text-gray-500">Warna Teks:</label>
+                        <input type="color" id="colorCertNo" value="#334155" oninput="onLayoutInputChange()" class="w-full h-7 p-0 border rounded cursor-pointer">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 4. KONTROL QR CODE -->
+                <p class="font-bold text-gray-800 pt-2 flex items-center space-x-1">
+                  <i class="fa-solid fa-qrcode text-brand-red"></i>
+                  <span>Posisi QR Code Barcode:</span>
+                </p>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="text-[11px] text-gray-500">Posisi X:</label>
+                    <input type="range" id="posXQR" min="50" max="1100" value="950" oninput="onLayoutInputChange()" class="w-full accent-brand-red">
+                  </div>
+                  <div>
+                    <label class="text-[11px] text-gray-500">Posisi Y:</label>
+                    <input type="range" id="posYQR" min="50" max="750" value="650" oninput="onLayoutInputChange()" class="w-full accent-brand-red">
+                  </div>
+                </div>
+              </div>
+
+              <div class="pt-2 flex flex-col gap-2">
+                <button onclick="saveCurrentLayoutExplicitly()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-2 shadow">
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  <span>Simpan Pengaturan Layout & Template</span>
+                </button>
+
+                <div class="flex gap-2">
+                  <button onclick="downloadTestCanvasImage()" class="w-full py-2 bg-brand-navy hover:bg-gray-800 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-1.5 shadow">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Download Tes Render</span>
+                  </button>
+                  <button onclick="resetCategoryLayout()" class="py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-xs transition shadow" title="Reset Posisi Default">
+                    <i class="fa-solid fa-rotate-left"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Canvas Render Box -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 lg:col-span-2 flex flex-col items-center justify-center">
+              <span class="text-xs font-bold text-gray-700 mb-3 w-full text-left">Preview Sertifikat Real-Time (Canvas 1200x850 px)</span>
+              <div class="w-full overflow-hidden rounded-lg border border-gray-300 shadow-md bg-gray-100 flex justify-center items-center p-2">
+                <canvas id="certCanvas" width="1200" height="850" class="max-w-full h-auto rounded bg-white"></canvas>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Tabel Data Sertifikat -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-              <thead class="bg-gray-50 border-b border-gray-200 text-gray-600 font-bold uppercase tracking-wider">
-                <tr>
-                  <th class="p-3.5 w-10 text-center">
-                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
-                  </th>
-                  <th class="p-3.5">No. Unik</th>
-                  <th class="p-3.5">Nama Lengkap</th>
-                  <th class="p-3.5">Asal Sekolah</th>
-                  <th class="p-3.5">Kategori / Perihal</th>
-                  <th class="p-3.5">Nomor Sertifikat Lengkap</th>
-                  <th class="p-3.5 text-center">QR Code</th>
-                  <th class="p-3.5 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="certTableBody" class="divide-y divide-gray-100 text-gray-700">
-                <!-- Baris tabel di-generate via JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+        <!-- TAB 4: DEPLOYMENT GUIDE -->
+        <div id="adminTabGuide" class="hidden space-y-6">
+          <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
+            <h3 class="text-lg font-bold text-gray-900 flex items-center space-x-2">
+              <i class="fa-solid fa-cloud-arrow-up text-brand-red"></i>
+              <span>Panduan Hosting GitHub Pages & Database Firebase</span>
+            </h3>
 
-      <!-- SUB-TAB 2: CANVAS EDITOR & TEMPLATE -->
-      <section id="subTabAdminCanvas" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        <!-- Controls Sidebar Left -->
-        <div class="lg:col-span-5 bg-white p-5 rounded-2xl shadow-sm border border-gray-200 space-y-5">
-          <div class="flex justify-between items-center border-b pb-3">
-            <h3 class="font-bold text-gray-900 text-sm">Pengaturan Posisi & Template</h3>
-            <select id="canvasCategorySelect" onchange="loadCategoryTemplateSettings()" class="px-3 py-1.5 rounded-xl border border-gray-300 text-xs font-bold text-orange-600 bg-orange-50 focus:outline-none">
-              <option value="Peserta">Template Peserta</option>
-              <option value="Bindamping">Template Bindamping</option>
-              <option value="Panitia">Template Panitia</option>
-              <option value="Petugas Upacara">Template Petugas Upacara</option>
-            </select>
-          </div>
-
-          <!-- Upload Background Image -->
-          <div>
-            <label class="block text-xs font-bold text-gray-700 mb-1">Unggah Image Background Sertifikat</label>
-            <input type="file" id="bgUploader" accept="image/*" onchange="handleBgUpload(event)" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer">
-          </div>
-
-          <hr class="border-gray-100">
-
-          <!-- Sliders Position Controls -->
-          <div class="space-y-4 max-h-[450px] overflow-y-auto pr-2">
-            
-            <!-- Position Nama -->
-            <div class="p-3 bg-gray-50 rounded-xl space-y-2">
-              <div class="flex justify-between text-xs font-bold text-gray-800">
-                <span>📍 Teks Nama Lengkap</span>
-                <input type="color" id="colorName" onchange="updateCanvasPreview()" value="#000000" class="w-5 h-5 rounded cursor-pointer border">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs leading-relaxed">
+              <div class="border p-4 rounded-xl bg-gray-50 space-y-2">
+                <p class="font-bold text-sm text-gray-900"><i class="fa-brands fa-github mr-1"></i> GitHub Pages:</p>
+                <ol class="list-decimal list-inside space-y-1 text-gray-700">
+                  <li>Buat repository baru bernama <code class="bg-gray-200 px-1 rounded">sertifikat-kembaranas</code>.</li>
+                  <li>Simpan kode file ini sebagai <code class="bg-gray-200 px-1 rounded font-bold">index.html</code>.</li>
+                  <li>Upload file ke repository, lalu masuk ke <strong>Settings &gt; Pages</strong>.</li>
+                  <li>Pilih Branch <strong>main</strong> lalu klik <strong>Save</strong>.</li>
+                </ol>
               </div>
-              <div class="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <label>Posisi Y: <span id="valYName">480</span></label>
-                  <input type="range" id="posYName" min="50" max="1200" value="480" oninput="updateCanvasPreview()" class="w-full">
-                </div>
-                <div>
-                  <label>Font Size: <span id="valSizeName">44</span></label>
-                  <input type="number" id="fontSizeName" min="10" max="120" value="44" oninput="updateCanvasPreview()" class="w-full px-2 py-1 rounded border">
-                </div>
+
+              <div class="border p-4 rounded-xl bg-amber-50/50 space-y-2">
+                <p class="font-bold text-sm text-amber-900"><i class="fa-solid fa-fire mr-1 text-amber-600"></i> Firebase Firestore:</p>
+                <ol class="list-decimal list-inside space-y-1 text-amber-900">
+                  <li>Buka Firebase Console &rarr; buat Cloud Firestore.</li>
+                  <li>Sistem otomatis menyimpan data sertifikat pada path: <code class="font-mono bg-white px-1 border rounded">/certificates/{id}</code>.</li>
+                  <li>Mendukung verifikasi langsung saat QR Code di-scan dari HP peserta.</li>
+                </ol>
               </div>
             </div>
-
-            <!-- Position Nomor Sertifikat -->
-            <div class="p-3 bg-gray-50 rounded-xl space-y-2">
-              <div class="flex justify-between text-xs font-bold text-gray-800">
-                <span>📍 Nomor Sertifikat Lengkap</span>
-                <input type="color" id="colorCertNo" onchange="updateCanvasPreview()" value="#666666" class="w-5 h-5 rounded cursor-pointer border">
-              </div>
-              <div class="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <label>Posisi X: <span id="valXCertNo">600</span></label>
-                  <input type="range" id="posXCertNo" min="50" max="1500" value="600" oninput="updateCanvasPreview()" class="w-full">
-                </div>
-                <div>
-                  <label>Posisi Y: <span id="valYCertNo">360</span></label>
-                  <input type="range" id="posYCertNo" min="50" max="1200" value="360" oninput="updateCanvasPreview()" class="w-full">
-                </div>
-              </div>
-              <div class="text-xs">
-                <label>Font Size: <span id="valSizeCertNo">22</span></label>
-                <input type="number" id="fontSizeCertNo" min="10" max="80" value="22" oninput="updateCanvasPreview()" class="w-full px-2 py-1 rounded border">
-              </div>
-            </div>
-
-            <!-- Position Asal Sekolah -->
-            <div class="p-3 bg-gray-50 rounded-xl space-y-2">
-              <div class="flex justify-between text-xs font-bold text-gray-800">
-                <span>📍 Teks Asal Sekolah</span>
-                <input type="color" id="colorSchool" onchange="updateCanvasPreview()" value="#333333" class="w-5 h-5 rounded cursor-pointer border">
-              </div>
-              <div class="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <label>Posisi Y: <span id="valYSchool">540</span></label>
-                  <input type="range" id="posYSchool" min="50" max="1200" value="540" oninput="updateCanvasPreview()" class="w-full">
-                </div>
-                <div>
-                  <label>Font Size: <span id="valSizeSchool">28</span></label>
-                  <input type="number" id="fontSizeSchool" min="10" max="80" value="28" oninput="updateCanvasPreview()" class="w-full px-2 py-1 rounded border">
-                </div>
-              </div>
-            </div>
-
-            <!-- Position QR Code -->
-            <div class="p-3 bg-gray-50 rounded-xl space-y-2">
-              <span class="text-xs font-bold text-gray-800">📍 QR Code Barcode</span>
-              <div class="grid grid-cols-3 gap-2 text-xs">
-                <div>
-                  <label>Posisi X: <span id="valXQR">1050</span></label>
-                  <input type="range" id="posXQR" min="50" max="1500" value="1050" oninput="updateCanvasPreview()" class="w-full">
-                </div>
-                <div>
-                  <label>Posisi Y: <span id="valYQR">720</span></label>
-                  <input type="range" id="posYQR" min="50" max="1200" value="720" oninput="updateCanvasPreview()" class="w-full">
-                </div>
-                <div>
-                  <label>Ukuran Size: <span id="valSizeQR">120</span></label>
-                  <input type="number" id="sizeQR" min="40" max="300" value="120" oninput="updateCanvasPreview()" class="w-full px-2 py-1 rounded border">
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- Tombol Simpan Pengaturan Layout -->
-          <button onclick="saveLayoutSettings()" class="w-full py-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-orange-500/20 transition">
-            💾 Simpan Pengaturan Layout & Template
-          </button>
-        </div>
-
-        <!-- Preview Interactive Canvas Right -->
-        <div class="lg:col-span-7 bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col items-center">
-          <div class="flex justify-between items-center w-full mb-3">
-            <h4 class="font-bold text-xs text-gray-700">Live Preview Canvas</h4>
-            <span class="text-[11px] text-gray-400">1200 x 850px Standard Resolution</span>
-          </div>
-          <div class="w-full overflow-hidden border border-gray-300 rounded-xl shadow-inner bg-gray-900 flex justify-center p-2">
-            <canvas id="certCanvas" width="1200" height="850" class="max-w-full h-auto rounded shadow-lg bg-white"></canvas>
           </div>
         </div>
 
-      </section>
-
-    </div>
+      </div>
+    </section>
 
   </main>
 
-  <!-- Modal Import Excel -->
-  <div id="importModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl">
-      <h3 class="text-lg font-bold text-gray-900 mb-1">Import Data Excel / CSV</h3>
-      <p class="text-xs text-gray-500 mb-4">Unggah file Excel untuk memproses data sertifikat secara massal.</p>
-      
-      <div class="space-y-4">
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-gray-200 py-4 text-center text-xs text-gray-500">
+    <p>© 2026 Perkemahan Ukhuwah Nasional (KEMBARANAS) III - SAKO SIT Indonesia</p>
+  </footer>
+
+  <!-- MODAL 1: ADMIN LOGIN MODAL -->
+  <div id="loginModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-5 relative border border-gray-100 modal-scale-up">
+      <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="text-center space-y-1">
+        <div class="w-14 h-14 bg-brand-red/10 text-brand-red rounded-full mx-auto flex items-center justify-center text-xl">
+          <i class="fa-solid fa-user-shield"></i>
+        </div>
+        <h3 class="text-xl font-extrabold text-gray-900">Login Admin Sertifikat</h3>
+        <p class="text-xs text-gray-500">Aplikasi Sertifikat Kembaranas III SAKO SIT</p>
+      </div>
+
+      <form onsubmit="handleLoginSubmit(event)" class="space-y-4 text-xs sm:text-sm">
         <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1">Pilih Mode Import:</label>
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <label class="p-3 border rounded-xl flex items-center gap-2 cursor-pointer hover:bg-orange-50 border-orange-200">
-              <input type="radio" name="importMode" value="append" checked class="text-orange-600 focus:ring-orange-500">
-              <div>
-                <div class="font-bold text-gray-800">Tambahkan Data (Append)</div>
-                <div class="text-[10px] text-gray-500">Melanjutkan nomor urut tanpa menghapus data yang ada.</div>
-              </div>
-            </label>
-            <label class="p-3 border rounded-xl flex items-center gap-2 cursor-pointer hover:bg-red-50 border-red-200">
-              <input type="radio" name="importMode" value="overwrite" class="text-red-600 focus:ring-red-500">
-              <div>
-                <div class="font-bold text-gray-800">Timpa Semua (Overwrite)</div>
-                <div class="text-[10px] text-gray-500">Mengosongkan database & ganti dengan data baru.</div>
-              </div>
-            </label>
+          <label class="block font-semibold text-gray-700 mb-1">Username Admin</label>
+          <input type="text" id="loginUsername" placeholder="Masukkan Username" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-red focus:outline-none">
+        </div>
+        <div>
+          <label class="block font-semibold text-gray-700 mb-1">Password</label>
+          <input type="password" id="loginPassword" placeholder="Masukkan Password" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-red focus:outline-none">
+        </div>
+
+        <button type="submit" class="w-full py-2.5 bg-brand-red hover:bg-brand-darkred text-white font-bold rounded-lg shadow transition text-sm">
+          Masuk Ke Dashboard
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: ADD / EDIT CERTIFICATE MODAL -->
+  <div id="addEditModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-6 space-y-4 relative modal-scale-up">
+      <button onclick="closeAddEditModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <h3 id="addEditModalTitle" class="text-base font-bold text-gray-900 border-b pb-2">Tambah Data Sertifikat Baru</h3>
+
+      <form onsubmit="handleSaveRecord(event)" class="space-y-3 text-xs sm:text-sm">
+        <input type="hidden" id="editRecordId">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Nomor Urut (4 Digit):</label>
+            <input type="text" id="formNumCode" placeholder="0005" required maxlength="4" oninput="updateFormPreviewCertNo()" class="w-full p-2 border rounded-lg font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Kategori:</label>
+            <select id="formCategory" class="w-full p-2 border rounded-lg">
+              <option value="Peserta">Peserta</option>
+              <option value="Bindamping">Bindamping</option>
+              <option value="Panitia">Panitia</option>
+              <option value="Petugas Upacara">Petugas Upacara</option>
+            </select>
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1">Pilih File (.xlsx / .csv)</label>
-          <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer">
+          <label class="block font-semibold text-gray-700 mb-1">Nama Lengkap Peserta / Penerima:</label>
+          <input type="text" id="formName" placeholder="Contoh: FAEYZA KENZIE GIAR PRAMIYADI" required class="w-full p-2 border rounded-lg font-semibold">
         </div>
 
-        <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 text-amber-800 text-xs">
-          <strong>Format Kolom Excel:</strong> <code>Nama</code>, <code>Asal_Sekolah</code>, <code>Perihal</code> (Kategori: Peserta/Bindamping/Panitia/Petugas Upacara).
+        <div>
+          <label class="block font-semibold text-gray-700 mb-1">Asal Sekolah / Instansi:</label>
+          <input type="text" id="formSchool" placeholder="Contoh: SMAIT Ummul Quro Bogor" required class="w-full p-2 border rounded-lg">
         </div>
-      </div>
 
-      <div class="flex justify-between items-center mt-6">
-        <button onclick="downloadSampleExcel()" class="text-xs font-bold text-orange-600 hover:underline">📥 Download Sampel Excel</button>
-        <div class="flex gap-2">
-          <button onclick="closeImportModal()" class="px-4 py-2 rounded-xl text-xs font-semibold border border-gray-300">Batal</button>
-          <button onclick="processExcelImport()" class="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-md">Proses Import</button>
+        <div class="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-amber-900 text-xs">
+          <p class="font-bold">Format No Sertifikat Otomatis:</p>
+          <p class="font-mono text-[11px]" id="previewFormCertNo">0005-0247/KEMBARANAS-III/SAKO-SIT/X/2026</p>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Modal Edit / Tambah Manual -->
-  <div id="certModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-      <h3 class="text-lg font-bold text-gray-900 mb-4" id="certModalTitle">Tambah Sertifikat Baru</h3>
-      <form id="certForm" onsubmit="handleCertFormSubmit(event)" class="space-y-3 text-xs">
-        <input type="hidden" id="editCertId">
-        <div>
-          <label class="block font-bold text-gray-700 mb-1">Nama Lengkap</label>
-          <input type="text" id="formName" required class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-500">
-        </div>
-        <div>
-          <label class="block font-bold text-gray-700 mb-1">Asal Sekolah</label>
-          <input type="text" id="formSchool" required class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-500">
-        </div>
-        <div>
-          <label class="block font-bold text-gray-700 mb-1">Kategori / Perihal</label>
-          <select id="formCategory" class="w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-500">
-            <option value="Peserta">Peserta</option>
-            <option value="Bindamping">Bindamping</option>
-            <option value="Panitia">Panitia</option>
-            <option value="Petugas Upacara">Petugas Upacara</option>
-          </select>
-        </div>
-        <div class="flex justify-end gap-2 pt-4">
-          <button type="button" onclick="closeCertModal()" class="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 font-semibold">Batal</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-orange-600 text-white font-bold shadow-md">Simpan Data</button>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeAddEditModal()" class="px-4 py-2 border rounded-lg text-gray-700 font-semibold text-xs">Batal</button>
+          <button type="submit" class="px-5 py-2 bg-brand-red hover:bg-brand-darkred text-white font-bold rounded-lg text-xs shadow">Simpan Data</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="bg-slate-900 text-slate-400 text-xs py-4 border-t border-slate-800 text-center">
-    <p>© 2026 Kembaranas III - SAKO PRAMUKA SIT INDONESIA. Powered by GitHub Pages & Firebase.</p>
-  </footer>
+  <!-- MODAL 3: CUSTOM CONFIRMATION MODAL -->
+  <div id="customConfirmModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center space-y-4 modal-scale-up">
+      <div id="confirmModalIconContainer" class="w-14 h-14 rounded-full mx-auto flex items-center justify-center text-2xl bg-red-100 text-red-600">
+        <i id="confirmModalIcon" class="fa-solid fa-triangle-exclamation"></i>
+      </div>
 
-  <!-- SCRIPT LOGIKA UTAMA -->
+      <div class="space-y-1">
+        <h4 id="confirmModalTitle" class="text-base font-bold text-gray-900">Konfirmasi Tindakan</h4>
+        <p id="confirmModalMessage" class="text-xs text-gray-600 leading-relaxed">Apakah Anda yakin ingin melanjutkan tindakan ini?</p>
+      </div>
+
+      <div class="flex items-center justify-center space-x-2 pt-2">
+        <button id="confirmBtnCancel" onclick="closeConfirmModal(false)" class="w-1/2 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 transition">
+          Batal
+        </button>
+        <button id="confirmBtnProceed" onclick="closeConfirmModal(true)" class="w-1/2 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold shadow transition">
+          Ya, Lanjutkan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- JAVASCRIPT LOGIC -->
   <script>
-    // --- DATABASE & STATE MANAGEMENT ---
-    const DB_KEY = 'kembaranas_cert_db_v3';
-    const LAYOUT_KEY = 'kembaranas_layout_v3';
-    const ADMIN_SESSION_KEY = 'kembaranas_admin_session';
-
-    let certDatabase = [];
-    let currentPage = 1;
-    let pageSize = 25;
-    let selectedIds = new Set();
-    let currentAdminSubTab = 'data';
-
-    // Settings Layout Default Per-Kategori
-    let layoutSettings = {
-      Peserta: { bgData: null, yName: 480, sizeName: 44, colorName: '#000000', xCertNo: 600, yCertNo: 360, sizeCertNo: 22, colorCertNo: '#444444', ySchool: 540, sizeSchool: 28, colorSchool: '#333333', xQR: 1050, yQR: 720, sizeQR: 120 },
-      Bindamping: { bgData: null, yName: 480, sizeName: 44, colorName: '#000000', xCertNo: 600, yCertNo: 360, sizeCertNo: 22, colorCertNo: '#444444', ySchool: 540, sizeSchool: 28, colorSchool: '#333333', xQR: 1050, yQR: 720, sizeQR: 120 },
-      Panitia: { bgData: null, yName: 480, sizeName: 44, colorName: '#000000', xCertNo: 600, yCertNo: 360, sizeCertNo: 22, colorCertNo: '#444444', ySchool: 540, sizeSchool: 28, colorSchool: '#333333', xQR: 1050, yQR: 720, sizeQR: 120 },
-      "Petugas Upacara": { bgData: null, yName: 480, sizeName: 44, colorName: '#000000', xCertNo: 600, yCertNo: 360, sizeCertNo: 22, colorCertNo: '#444444', ySchool: 540, sizeSchool: 28, colorSchool: '#333333', xQR: 1050, yQR: 720, sizeQR: 120 }
-    };
-
-    // Initial Seed Data Sampel Jika Database Kosong
-    const initialSeed = [
-      { id: "0001", numCode: "0001", name: "FAEYZA KENZIE GIAR PRAMIYADI", school: "SMAIT Ummul Quro Bogor", category: "Peserta", certNo: "No. 0001-0247/KEMBARANAS-III/SAKO-SIT/X/2026", date: "31 Oktober 2026" },
-      { id: "0002", numCode: "0002", name: "Ahmad Fauzi", school: "SDIT Al-Madina", category: "Peserta", certNo: "No. 0002-0247/KEMBARANAS-III/SAKO-SIT/X/2026", date: "31 Oktober 2026" },
-      { id: "0003", numCode: "0003", name: "Siti Sarah", school: "SMPIT Nurul Fikri", category: "Bindamping", certNo: "No. 0003-0247/KEMBARANAS-III/SAKO-SIT/X/2026", date: "31 Oktober 2026" }
+    // INITIAL DEFAULT SAMPLE DATA
+    const DEFAULT_CERTIFICATES = [
+      { 
+        id: "0001", 
+        numCode: "0001", 
+        name: "FAEYZA KENZIE GIAR PRAMIYADI", 
+        school: "SMAIT Ummul Quro Bogor", 
+        category: "Peserta", 
+        certNo: "0001-0247/KEMBARANAS-III/SAKO-SIT/X/2026", 
+        locationDate: "Bandar Lampung, 31 Oktober 2026", 
+        sakoOrg: "JSIT Wilayah Lampung", 
+        signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III", 
+        subject: "Sertifikat Peserta Perkemahan Ukhuwah Nasional (KEMBARANAS) III SAKO SIT" 
+      },
+      { 
+        id: "0002", 
+        numCode: "0002", 
+        name: "Ustadz Ahmad Fauzi, S.Pd.", 
+        school: "SMPIT Al-Kautsar", 
+        category: "Bindamping", 
+        certNo: "0002-0247/KEMBARANAS-III/SAKO-SIT/X/2026", 
+        locationDate: "Bandar Lampung, 31 Oktober 2026", 
+        sakoOrg: "JSIT Wilayah Lampung", 
+        signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III", 
+        subject: "Sertifikat Pembina Pendamping (Bindamping) Kembaranas III" 
+      },
+      { 
+        id: "0003", 
+        numCode: "0003", 
+        name: "Siti Nurhaliza, S.T.", 
+        school: "Pinsako SIT Wilayah Lampung", 
+        category: "Panitia", 
+        certNo: "0003-0247/KEMBARANAS-III/SAKO-SIT/X/2026", 
+        locationDate: "Bandar Lampung, 31 Oktober 2026", 
+        sakoOrg: "JSIT Wilayah Lampung", 
+        signatory: "Ketua Pinsakonas SAKO SIT", 
+        subject: "Sertifikat Panitia Penyelenggara Kembaranas III SAKO SIT" 
+      },
+      { 
+        id: "0004", 
+        numCode: "0004", 
+        name: "Muhammad Rizky Pratama", 
+        school: "SMAIT Luqman Al-Hakim", 
+        category: "Petugas Upacara", 
+        certNo: "0004-0247/KEMBARANAS-III/SAKO-SIT/X/2026", 
+        locationDate: "Bandar Lampung, 31 Oktober 2026", 
+        sakoOrg: "JSIT Wilayah Lampung", 
+        signatory: "Ketua Panitia Kembaranas III", 
+        subject: "Sertifikat Petugas Upacara Kembaranas III SAKO SIT" 
+      }
     ];
 
-    // --- INITIALIZATION ---
+    // DEFAULT LAYOUT CONFIG PER CATEGORY
+    const DEFAULT_LAYOUTS = {
+      'Peserta': { posYName: 380, fontSizeName: 42, posYSchool: 450, fontSizeSchool: 24, showCertNo: true, posXCertNo: 600, posYCertNo: 330, fontSizeCertNo: 18, colorCertNo: '#334155', posXQR: 950, posYQR: 650, bgImage: null },
+      'Bindamping': { posYName: 380, fontSizeName: 42, posYSchool: 450, fontSizeSchool: 24, showCertNo: true, posXCertNo: 600, posYCertNo: 330, fontSizeCertNo: 18, colorCertNo: '#334155', posXQR: 950, posYQR: 650, bgImage: null },
+      'Panitia': { posYName: 380, fontSizeName: 42, posYSchool: 450, fontSizeSchool: 24, showCertNo: true, posXCertNo: 600, posYCertNo: 330, fontSizeCertNo: 18, colorCertNo: '#334155', posXQR: 950, posYQR: 650, bgImage: null },
+      'Petugas Upacara': { posYName: 380, fontSizeName: 42, posYSchool: 450, fontSizeSchool: 24, showCertNo: true, posXCertNo: 600, posYCertNo: 330, fontSizeCertNo: 18, colorCertNo: '#334155', posXQR: 950, posYQR: 650, bgImage: null }
+    };
+
+    // APPLICATION STATE
+    let state = {
+      certificates: [],
+      layouts: {},
+      loadedBgImages: {}, // Preloaded Image Objects in Memory
+      isAdminLoggedIn: false,
+      currentView: 'public_search',
+      adminTab: 'data',
+      activeCategoryFilter: 'ALL',
+      activeCert: null,
+      
+      currentPage: 1,
+      pageSize: 10,
+
+      selectedIds: new Set(),
+      confirmCallback: null,
+
+      importPreviewData: []
+    };
+
+    // ON DOM LOAD INITIALIZATION
     window.addEventListener('DOMContentLoaded', () => {
-      loadDatabase();
+      loadInitialData();
       loadLayoutSettings();
-      checkUrlParams();
-      checkAdminSession();
+      checkURLParameters();
     });
 
-    function loadDatabase() {
+    // UTF-8 SAFE BASE64 ENCODER & DECODER FOR CROSS-DEVICE MOBILE PAYLOADS
+    function encodePayload(obj) {
       try {
-        const stored = localStorage.getItem(DB_KEY);
-        if (stored) {
-          certDatabase = JSON.parse(stored);
-        } else {
-          certDatabase = [...initialSeed];
-          saveDatabase();
+        const jsonStr = JSON.stringify(obj);
+        return encodeURIComponent(btoa(unescape(encodeURIComponent(jsonStr))));
+      } catch(e) {
+        return "";
+      }
+    }
+
+    function decodePayload(str) {
+      try {
+        const jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(str))));
+        return JSON.parse(jsonStr);
+      } catch(e) {
+        return null;
+      }
+    }
+
+    // DYNAMIC VERIFICATION URL FOR QR CODES WITH EMBEDDED IDENTITY PAYLOAD
+    function getVerificationUrl(itemOrCode) {
+      const baseUrl = window.location.origin + window.location.pathname;
+      if (typeof itemOrCode === 'object' && itemOrCode !== null) {
+        const miniObj = {
+          id: itemOrCode.numCode || itemOrCode.id,
+          n: itemOrCode.name,
+          s: itemOrCode.school,
+          c: itemOrCode.category,
+          no: itemOrCode.certNo
+        };
+        const payload = encodePayload(miniObj);
+        return `${baseUrl}?id=${encodeURIComponent(itemOrCode.numCode || itemOrCode.id)}&v=${payload}`;
+      } else {
+        const found = state.certificates.find(c => 
+          (c.id && String(c.id).trim().toLowerCase() === String(itemOrCode).trim().toLowerCase()) ||
+          (c.numCode && String(c.numCode).trim().toLowerCase() === String(itemOrCode).trim().toLowerCase())
+        );
+        if (found) return getVerificationUrl(found);
+        return `${baseUrl}?id=${encodeURIComponent(itemOrCode)}`;
+      }
+    }
+
+    // LOAD INITIAL DATA FROM LOCAL STORAGE & PERSISTENT SESSION
+    function loadInitialData() {
+      // Restore Admin Persistent Session State
+      state.isAdminLoggedIn = localStorage.getItem('kembaranas_admin_session') === 'true';
+
+      const saved = localStorage.getItem('kembaranas_certificates');
+      if (saved) {
+        try { 
+          state.certificates = JSON.parse(saved); 
+          // Synchronize default records if updated
+          const idx = state.certificates.findIndex(c => c.id === "0001" && c.name.includes("Faqih"));
+          if (idx !== -1) {
+            state.certificates[idx] = { ...DEFAULT_CERTIFICATES[0] };
+            saveCertificatesToStorage();
+          }
+        } 
+        catch(e) { 
+          state.certificates = [...DEFAULT_CERTIFICATES]; 
         }
-      } catch (e) {
-        certDatabase = [...initialSeed];
+      } else {
+        state.certificates = [...DEFAULT_CERTIFICATES];
+        saveCertificatesToStorage();
       }
     }
 
-    function saveDatabase() {
-      try {
-        localStorage.setItem(DB_KEY, JSON.stringify(certDatabase));
-      } catch (e) {
-        showToast('Storage penuh! Gagal menyimpan data sertifikat.', 'danger');
-      }
+    function saveCertificatesToStorage() {
+      localStorage.setItem('kembaranas_certificates', JSON.stringify(state.certificates));
     }
 
+    // LOAD & SAVE LAYOUT SETTINGS PERMANENTLY (STORAGE KEY: kembaranas_layout_v3)
     function loadLayoutSettings() {
-      try {
-        const stored = localStorage.getItem(LAYOUT_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          layoutSettings = { ...layoutSettings, ...parsed };
+      const saved = localStorage.getItem('kembaranas_layout_v3');
+      if (saved) {
+        try {
+          state.layouts = JSON.parse(saved);
+          // Ensure all categories exist
+          ['Peserta', 'Bindamping', 'Panitia', 'Petugas Upacara'].forEach(cat => {
+            if (!state.layouts[cat]) state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat] };
+          });
+        } catch(e) {
+          state.layouts = JSON.parse(JSON.stringify(DEFAULT_LAYOUTS));
         }
-      } catch (e) {}
+      } else {
+        state.layouts = JSON.parse(JSON.stringify(DEFAULT_LAYOUTS));
+        saveLayoutSettings();
+      }
+
+      // Preload compressed Data URLs into HTML Image objects
+      Object.keys(state.layouts).forEach(cat => {
+        if (state.layouts[cat] && state.layouts[cat].bgImage) {
+          const img = new Image();
+          img.onload = () => {
+            state.loadedBgImages[cat] = img;
+            if (state.adminTab === 'template') renderCertCanvas();
+          };
+          img.src = state.layouts[cat].bgImage;
+        }
+      });
     }
 
-    // --- TOAST & DIALOG NOTIFIKASI KUSTOM ---
-    function showToast(message, type = 'success') {
-      const container = document.getElementById('toastContainer');
-      const toast = document.createElement('div');
-      
-      const bgColors = {
-        success: 'bg-emerald-600 text-white',
-        danger: 'bg-red-600 text-white',
-        warning: 'bg-amber-500 text-white',
-        info: 'bg-blue-600 text-white'
-      };
-      
-      const icons = { success: '✅', danger: '🚨', warning: '⚠️', info: 'ℹ️' };
-
-      toast.className = `toast-animate flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl font-bold text-xs pointer-events-auto transform translate-y-2 opacity-0 ${bgColors[type] || bgColors.info}`;
-      toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${message}</span>`;
-      
-      container.appendChild(toast);
-      
-      setTimeout(() => {
-        toast.classList.remove('translate-y-2', 'opacity-0');
-      }, 10);
-
-      setTimeout(() => {
-        toast.classList.add('opacity-0', '-translate-y-2');
-        setTimeout(() => toast.remove(), 300);
-      }, 3500);
-    }
-
-    function customConfirm(title, message, onConfirm) {
-      const modal = document.getElementById('customConfirmModal');
-      const modalTitle = document.getElementById('confirmTitle');
-      const modalMsg = document.getElementById('confirmMessage');
-      const btnOk = document.getElementById('confirmBtnOk');
-      const btnCancel = document.getElementById('confirmBtnCancel');
-
-      modalTitle.innerText = title;
-      modalMsg.innerText = message;
-      modal.classList.remove('hidden');
-
-      const cleanup = () => {
-        modal.classList.add('hidden');
-        btnOk.onclick = null;
-        btnCancel.onclick = null;
-      };
-
-      btnOk.onclick = () => { cleanup(); onConfirm(); };
-      btnCancel.onclick = cleanup;
-    }
-
-    // --- AUTHENTICATION & NAVIGATION ---
-    function checkAdminSession() {
-      const session = localStorage.getItem(ADMIN_SESSION_KEY);
-      if (session === 'true') {
-        showAdminUI(true);
+    function saveLayoutSettings() {
+      try {
+        localStorage.setItem('kembaranas_layout_v3', JSON.stringify(state.layouts));
+        return true;
+      } catch (err) {
+        console.error("Storage limit reached:", err);
+        showToast("Storage penuh! Gambar background disimpan sementara untuk sesi ini.", "warning");
+        return false;
       }
     }
 
-    function toggleAdminAuth() {
-      const session = localStorage.getItem(ADMIN_SESSION_KEY);
-      if (session === 'true') {
-        customConfirm('Logout Admin', 'Apakah Anda yakin ingin keluar dari Admin Dashboard?', () => {
-          localStorage.removeItem(ADMIN_SESSION_KEY);
-          showAdminUI(false);
-          switchTab('public');
-          showToast('Berhasil logout dari Admin Dashboard', 'info');
+    function saveCurrentLayoutExplicitly() {
+      onLayoutInputChange();
+      const success = saveLayoutSettings();
+      const cat = document.getElementById('editorCategorySelect')?.value || 'Peserta';
+      if (success) {
+        showToast(`Pengaturan layout & template kategori ${cat} berhasil disimpan!`, "success");
+      }
+    }
+
+    // HELPER UNTUK MENDAPATKAN NOMOR URUT SERI TERTINGGI DALAM DATABASE
+    function getMaxNumCode() {
+      if (!state.certificates || state.certificates.length === 0) return 0;
+      let max = 0;
+      state.certificates.forEach(c => {
+        const num = parseInt(c.numCode || c.id, 10);
+        if (!isNaN(num) && num > max) {
+          max = num;
+        }
+      });
+      return max;
+    }
+
+    // CHECK URL PARAMETERS FOR VERIFICATION SCAN (?id=0001 OR ?v=payload)
+    function checkURLParameters() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const payloadParam = urlParams.get('v');
+      const certId = urlParams.get('id') || urlParams.get('no') || urlParams.get('code');
+
+      // 1. Highest Priority: Decode embedded payload parameter (works on smartphones without local storage)
+      if (payloadParam) {
+        const decoded = decodePayload(payloadParam);
+        if (decoded && decoded.n) {
+          state.activeCert = {
+            id: decoded.id || certId || "0000",
+            numCode: decoded.id || certId || "0000",
+            name: decoded.n,
+            school: decoded.s || "-",
+            category: decoded.c || "Peserta",
+            certNo: decoded.no || `${decoded.id}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`,
+            locationDate: "Bandar Lampung, 31 Oktober 2026",
+            sakoOrg: "JSIT Wilayah Lampung",
+            signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III",
+            subject: `Sertifikat ${decoded.c || 'Peserta'} Kembaranas III SAKO SIT`
+          };
+          switchView('public_verification');
+          return;
+        }
+      }
+
+      // 2. Second Priority: Search local dataset
+      if (certId) {
+        loadCertByCode(certId);
+      } else {
+        if (state.isAdminLoggedIn && localStorage.getItem('kembaranas_last_view') === 'admin') {
+          switchView('admin');
+        } else {
+          switchView('public_search');
+        }
+      }
+    }
+
+    // VIEW SWITCHER
+    function switchView(viewName) {
+      state.currentView = viewName;
+      if (state.isAdminLoggedIn) {
+        localStorage.setItem('kembaranas_last_view', viewName);
+      }
+      document.getElementById('viewPublicVerification').classList.add('hidden');
+      document.getElementById('viewPublicSearch').classList.add('hidden');
+      document.getElementById('viewAdminDashboard').classList.add('hidden');
+
+      if (viewName === 'public_verification') {
+        document.getElementById('viewPublicVerification').classList.remove('hidden');
+        renderPublicVerificationPage();
+      } else if (viewName === 'public_search') {
+        document.getElementById('viewPublicSearch').classList.remove('hidden');
+      } else if (viewName === 'admin') {
+        if (!state.isAdminLoggedIn) {
+          openLoginModal();
+          document.getElementById('viewPublicSearch').classList.remove('hidden');
+        } else {
+          document.getElementById('viewAdminDashboard').classList.remove('hidden');
+          renderAdminTable();
+        }
+      }
+      updateAuthButtonUI();
+    }
+
+    function updateAuthButtonUI() {
+      const btnIcon = document.getElementById('btnAdminIcon');
+      const btnText = document.getElementById('btnAdminText');
+      if (state.isAdminLoggedIn) {
+        btnIcon.className = "fa-solid fa-right-from-bracket";
+        btnText.innerText = "Logout Admin";
+      } else {
+        btnIcon.className = "fa-solid fa-lock";
+        btnText.innerText = "Login Admin";
+      }
+    }
+
+    function handleAdminAuthClick() {
+      if (state.isAdminLoggedIn) {
+        openConfirmModal({
+          title: "Konfirmasi Logout",
+          message: "Apakah Anda yakin ingin keluar dari sesi Admin?",
+          icon: "fa-right-from-bracket",
+          iconBg: "bg-amber-100 text-amber-600",
+          proceedText: "Logout",
+          onProceed: () => {
+            state.isAdminLoggedIn = false;
+            localStorage.removeItem('kembaranas_admin_session');
+            localStorage.removeItem('kembaranas_last_view');
+            showToast("Logout admin berhasil", "info");
+            switchView('public_search');
+          }
         });
       } else {
         openLoginModal();
       }
     }
 
-    function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
-    function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
+    // ACCURATE PUBLIC VERIFICATION LOOKUP
+    function loadCertByCode(code) {
+      if (!code) return;
+      const query = String(code).trim().toLowerCase();
+      
+      const found = state.certificates.find(c => 
+        (c.id && String(c.id).trim().toLowerCase() === query) ||
+        (c.numCode && String(c.numCode).trim().toLowerCase() === query) ||
+        (c.certNo && String(c.certNo).trim().toLowerCase().includes(query))
+      );
+
+      if (found) {
+        state.activeCert = found;
+        switchView('public_verification');
+      } else {
+        showToast(`Sertifikat dengan nomor/ID "${code}" tidak ditemukan!`, "error");
+        switchView('public_search');
+      }
+    }
+
+    function searchCertificate() {
+      const input = document.getElementById('publicSearchInput').value.trim();
+      if (!input) {
+        showToast("Masukkan nomor sertifikat atau 4 digit ID terlebih dahulu!", "warning");
+        return;
+      }
+      loadCertByCode(input);
+    }
+
+    // RENDER VERIFIED CERTIFICATE INFO CARD
+    function renderPublicVerificationPage() {
+      if (!state.activeCert) return;
+      const cert = state.activeCert;
+      const container = document.getElementById('publicCertCardContent');
+
+      container.innerHTML = `
+        <!-- Field 1: No. Sertifikat -->
+        <div class="border-b border-gray-100 pb-3">
+          <div class="flex items-center space-x-2 text-xs font-bold text-gray-800">
+            <i class="fa-solid fa-file-lines text-brand-red"></i>
+            <span>No. Sertifikat</span>
+          </div>
+          <p class="text-xs sm:text-sm font-mono font-bold text-gray-700 mt-1 pl-6">
+            ${cert.certNo}
+          </p>
+        </div>
+
+        <!-- Field 2: Kabupaten/Kota, Tanggal -->
+        <div class="border-b border-gray-100 pb-3">
+          <div class="flex items-center space-x-2 text-xs font-bold text-gray-800">
+            <i class="fa-solid fa-calendar-days text-brand-red"></i>
+            <span>Kabupaten/Kota, Tanggal</span>
+          </div>
+          <p class="text-xs sm:text-sm font-medium text-gray-600 mt-1 pl-6">
+            ${cert.locationDate || "Bandar Lampung, 31 Oktober 2026"}
+          </p>
+        </div>
+
+        <!-- Field 3: JSIT / SAKO SIT -->
+        <div class="border-b border-gray-100 pb-3">
+          <div class="flex items-center space-x-2 text-xs font-bold text-gray-800">
+            <i class="fa-solid fa-house text-brand-red"></i>
+            <span>JSIT / SAKO SIT</span>
+          </div>
+          <p class="text-xs sm:text-sm font-medium text-gray-600 mt-1 pl-6">
+            ${cert.sakoOrg || "JSIT Wilayah Lampung"}
+          </p>
+        </div>
+
+        <!-- Field 4: Ditandatangani -->
+        <div class="border-b border-gray-100 pb-3">
+          <div class="flex items-center space-x-2 text-xs font-bold text-gray-800">
+            <i class="fa-solid fa-pen-nib text-brand-red"></i>
+            <span>Ditandatangani</span>
+          </div>
+          <p class="text-xs sm:text-sm font-medium text-gray-600 mt-1 pl-6">
+            ${cert.signatory || "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III"}
+          </p>
+        </div>
+
+        <!-- Field 5: Perihal -->
+        <div class="border-b border-gray-100 pb-3">
+          <div class="flex items-center space-x-2 text-xs font-bold text-gray-800">
+            <i class="fa-solid fa-envelope text-brand-red"></i>
+            <span>Perihal</span>
+          </div>
+          <p class="text-xs sm:text-sm font-medium text-gray-600 mt-1 pl-6">
+            ${cert.subject || `Sertifikat ${cert.category} Kembaranas III SAKO SIT`}
+          </p>
+        </div>
+
+        <!-- Field 6: Ditujukan Kepada (Identitas Lengkap) -->
+        <div class="pb-1 bg-red-50/50 p-3 rounded-lg border border-red-100">
+          <div class="flex items-center space-x-2 text-xs font-bold text-brand-darkred">
+            <i class="fa-solid fa-user-check"></i>
+            <span>Ditujukan Kepada Pemilik Sertifikat:</span>
+          </div>
+          <p class="text-sm sm:text-base font-extrabold text-gray-900 mt-1 pl-6">
+            ${cert.name}
+          </p>
+          <p class="text-xs font-semibold text-gray-600 pl-6 mt-0.5">
+            <i class="fa-solid fa-building-columns mr-1 text-gray-400"></i> ${cert.school}
+          </p>
+          <div class="mt-2 pl-6">
+            <span class="px-2.5 py-0.5 bg-brand-red text-white text-[10px] font-bold rounded uppercase tracking-wider">
+              ${cert.category}
+            </span>
+          </div>
+        </div>
+      `;
+    }
+
+    function copyPublicVerificationLink() {
+      if (!state.activeCert) return;
+      const shareUrl = getVerificationUrl(state.activeCert);
+      
+      const tempInput = document.createElement('input');
+      tempInput.value = shareUrl;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+
+      showToast("Tautan verifikasi berhasil disalin!", "success");
+    }
+
+    // LOGIN MODAL CONTROLS
+    function openLoginModal() {
+      document.getElementById('loginModal').classList.remove('hidden');
+    }
+
+    function closeLoginModal() {
+      document.getElementById('loginModal').classList.add('hidden');
+    }
 
     function handleLoginSubmit(e) {
       e.preventDefault();
-      try {
-        const u = document.getElementById('loginUser').value.trim();
-        const p = document.getElementById('loginPass').value.trim();
+      const user = document.getElementById('loginUsername').value.trim();
+      const pass = document.getElementById('loginPassword').value.trim();
 
-        if (u === 'admin' && p === 'admin123') {
-          localStorage.setItem(ADMIN_SESSION_KEY, 'true');
-          closeLoginModal();
-          showAdminUI(true);
-          switchTab('admin');
-          showToast('Login Administrator Berhasil!', 'success');
-        } else {
-          showToast('Username atau password salah!', 'danger');
-        }
-      } catch (err) {
-        showToast('Terjadi kesalahan sistem login.', 'danger');
-      }
-    }
-
-    function showAdminUI(isLoggedIn) {
-      const authBtn = document.getElementById('adminAuthBtn');
-      if (isLoggedIn) {
-        authBtn.innerText = '🚪 Logout Admin';
-        authBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-500 text-white shadow-md transition';
+      if (user === 'admin' && pass === 'admin123') {
+        state.isAdminLoggedIn = true;
+        localStorage.setItem('kembaranas_admin_session', 'true');
+        closeLoginModal();
+        showToast("Login berhasil! Selamat datang Admin.", "success");
+        switchView('admin');
       } else {
-        authBtn.innerText = '🔒 Login Admin';
-        authBtn.className = 'px-4 py-1.5 text-xs font-bold rounded-lg bg-orange-600 hover:bg-orange-500 text-white shadow-md transition';
+        showToast("Username atau Password salah!", "error");
       }
     }
 
-    function switchTab(tab) {
-      if (tab === 'admin') {
-        if (localStorage.getItem(ADMIN_SESSION_KEY) !== 'true') {
-          openLoginModal();
-          return;
-        }
-        document.getElementById('tabPublic').classList.add('hidden');
-        document.getElementById('adminPanel').classList.remove('hidden');
-        renderAdminTable();
-      } else {
-        document.getElementById('tabPublic').classList.remove('hidden');
-        document.getElementById('adminPanel').classList.add('hidden');
-      }
-    }
+    // ADMIN TAB SWITCHER
+    function switchAdminTab(tabName) {
+      state.adminTab = tabName;
+      document.getElementById('adminTabData').classList.add('hidden');
+      document.getElementById('adminTabImport').classList.add('hidden');
+      document.getElementById('adminTabTemplate').classList.add('hidden');
+      document.getElementById('adminTabGuide').classList.add('hidden');
 
-    function goHome() { switchTab('public'); }
-
-    function switchAdminSubTab(sub) {
-      currentAdminSubTab = sub;
-      const bData = document.getElementById('btnTabAdminData');
-      const bCanvas = document.getElementById('btnTabAdminCanvas');
-      const tData = document.getElementById('subTabAdminData');
-      const tCanvas = document.getElementById('subTabAdminCanvas');
-
-      if (sub === 'data') {
-        bData.className = 'px-5 py-2.5 rounded-xl text-xs font-bold transition bg-orange-500 text-white shadow-sm';
-        bCanvas.className = 'px-5 py-2.5 rounded-xl text-xs font-bold transition text-gray-600 hover:bg-gray-100';
-        tData.classList.remove('hidden');
-        tCanvas.classList.add('hidden');
-        renderAdminTable();
-      } else {
-        bCanvas.className = 'px-5 py-2.5 rounded-xl text-xs font-bold transition bg-orange-500 text-white shadow-sm';
-        bData.className = 'px-5 py-2.5 rounded-xl text-xs font-bold transition text-gray-600 hover:bg-gray-100';
-        tCanvas.classList.remove('hidden');
-        tData.classList.add('hidden');
-        loadCategoryTemplateSettings();
-      }
-    }
-
-    // --- CHECK URL SCAN BARCODE DECODING ---
-    function checkUrlParams() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const id = urlParams.get('id');
-      const vPayload = urlParams.get('v');
-
-      if (vPayload) {
-        try {
-          // Decode URL safe Base64 Payload barcode
-          const jsonStr = decodeURIComponent(escape(atob(vPayload)));
-          const payload = JSON.parse(jsonStr);
-          renderPublicVerification(payload.c, payload.n, payload.s, payload.t, '31 Oktober 2026');
-          switchTab('public');
-          return;
-        } catch (e) {}
-      }
-
-      if (id) {
-        const found = certDatabase.find(c => c.numCode === id || c.id === id);
-        if (found) {
-          renderPublicVerification(found.certNo, found.name, found.school, found.category, found.date);
-        } else {
-          showToast('Data sertifikat ID ' + id + ' tidak ditemukan.', 'warning');
-        }
-        switchTab('public');
-      }
-    }
-
-    function searchPublicCert() {
-      const query = document.getElementById('publicSearchInput').value.trim();
-      if (!query) return;
-      const found = certDatabase.find(c => c.numCode === query || c.name.toLowerCase().includes(query.toLowerCase()));
-      if (found) {
-        renderPublicVerification(found.certNo, found.name, found.school, found.category, found.date);
-        showToast('Sertifikat ditemukan!', 'success');
-      } else {
-        showToast('Sertifikat tidak ditemukan.', 'danger');
-      }
-    }
-
-    function renderPublicVerification(certNo, name, school, category, date) {
-      document.getElementById('vCertNo').innerText = certNo;
-      document.getElementById('vRecipient').innerText = name;
-      document.getElementById('vSchool').innerText = school;
-      document.getElementById('vSubject').innerText = 'Sertifikat ' + category + ' Kembaranas III';
-      document.getElementById('vDate').innerText = date || '31 Oktober 2026';
-    }
-
-    // --- ADMIN TABLE & PAGINATION ---
-    function getFilteredData() {
-      const q = document.getElementById('adminSearchInput').value.toLowerCase();
-      const cat = document.getElementById('categoryFilter').value;
-      return certDatabase.filter(item => {
-        const matchQ = item.name.toLowerCase().includes(q) || item.school.toLowerCase().includes(q) || item.numCode.includes(q);
-        const matchCat = (cat === 'ALL') || (item.category === cat);
-        return matchQ && matchCat;
+      document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+        btn.className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 transition flex items-center space-x-1.5";
       });
+
+      if (tabName === 'data') {
+        document.getElementById('adminTabData').classList.remove('hidden');
+        document.getElementById('tabBtnData').className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white shadow-sm";
+        renderAdminTable();
+      } else if (tabName === 'import') {
+        document.getElementById('adminTabImport').classList.remove('hidden');
+        document.getElementById('tabBtnImport').className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white shadow-sm";
+      } else if (tabName === 'template') {
+        document.getElementById('adminTabTemplate').classList.remove('hidden');
+        document.getElementById('tabBtnTemplate').className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white shadow-sm";
+        onEditorCategoryChange();
+      } else if (tabName === 'guide') {
+        document.getElementById('adminTabGuide').classList.remove('hidden');
+        document.getElementById('tabBtnGuide').className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white shadow-sm";
+      }
+    }
+
+    // DATA FILTERING & RENDER TABLE
+    function setCategoryFilter(cat) {
+      state.activeCategoryFilter = cat;
+      state.currentPage = 1;
+
+      document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+        btn.className = "cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 border border-gray-200 shrink-0";
+      });
+
+      const activeBtnId = cat === 'ALL' ? 'filterAll' :
+                          cat === 'Peserta' ? 'filterPeserta' :
+                          cat === 'Bindamping' ? 'filterBindamping' :
+                          cat === 'Panitia' ? 'filterPanitia' : 'filterPetugas';
+
+      document.getElementById(activeBtnId).className = "cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-navy text-white shadow-sm shrink-0";
+      renderAdminTable();
+    }
+
+    function onSearchChange() {
+      state.currentPage = 1;
+      renderAdminTable();
+    }
+
+    function changePageSize(size) {
+      state.pageSize = parseInt(size);
+      state.currentPage = 1;
+      renderAdminTable();
+    }
+
+    function getFilteredData() {
+      let result = [...state.certificates];
+      
+      if (state.activeCategoryFilter !== 'ALL') {
+        result = result.filter(c => c.category === state.activeCategoryFilter);
+      }
+
+      const search = document.getElementById('adminSearchInput')?.value.trim().toLowerCase();
+      if (search) {
+        result = result.filter(c => 
+          (c.name && c.name.toLowerCase().includes(search)) ||
+          (c.school && c.school.toLowerCase().includes(search)) ||
+          (c.certNo && c.certNo.toLowerCase().includes(search)) ||
+          (c.numCode && c.numCode.toLowerCase().includes(search))
+        );
+      }
+
+      return result;
+    }
+
+    function updateCategoryCounts() {
+      document.getElementById('countAll').innerText = state.certificates.length;
+      document.getElementById('countPeserta').innerText = state.certificates.filter(c => c.category === 'Peserta').length;
+      document.getElementById('countBindamping').innerText = state.certificates.filter(c => c.category === 'Bindamping').length;
+      document.getElementById('countPanitia').innerText = state.certificates.filter(c => c.category === 'Panitia').length;
+      document.getElementById('countPetugas').innerText = state.certificates.filter(c => c.category === 'Petugas Upacara').length;
     }
 
     function renderAdminTable() {
-      const data = getFilteredData();
-      const total = data.length;
-      
-      const totalPages = Math.ceil(total / pageSize) || 1;
-      if (currentPage > totalPages) currentPage = totalPages;
+      updateCategoryCounts();
+      renderAdminTableRowsOnly();
+    }
 
-      const start = (currentPage - 1) * pageSize;
-      const end = Math.min(start + pageSize, total);
-      const pageData = data.slice(start, end);
-
-      document.getElementById('pageInfoText').innerText = `Menampilkan ${total > 0 ? start + 1 : 0} - ${end} dari ${total} data`;
-      document.getElementById('currentPageBadge').innerText = currentPage;
-      document.getElementById('btnPrevPage').disabled = (currentPage <= 1);
-      document.getElementById('btnNextPage').disabled = (currentPage >= totalPages);
-
-      const tbody = document.getElementById('certTableBody');
+    function renderAdminTableRowsOnly() {
+      const tbody = document.getElementById('adminDataTableBody');
       tbody.innerHTML = '';
 
-      pageData.forEach(item => {
+      const filtered = getFilteredData();
+      const totalRecords = filtered.length;
+      document.getElementById('totalRecordsText').innerText = totalRecords;
+
+      if (totalRecords === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="py-8 text-center text-gray-400">
+              <i class="fa-solid fa-folder-open text-3xl mb-2"></i>
+              <p>Tidak ada data sertifikat yang cocok.</p>
+            </td>
+          </tr>
+        `;
+        document.getElementById('pageRangeText').innerText = "0 - 0";
+        document.getElementById('paginationControls').innerHTML = '';
+        return;
+      }
+
+      const totalPages = Math.ceil(totalRecords / state.pageSize) || 1;
+      if (state.currentPage > totalPages) state.currentPage = totalPages;
+
+      const startIndex = (state.currentPage - 1) * state.pageSize;
+      const endIndex = Math.min(startIndex + state.pageSize, totalRecords);
+      const pageData = filtered.slice(startIndex, endIndex);
+
+      document.getElementById('pageRangeText').innerText = `${startIndex + 1} - ${endIndex}`;
+
+      const masterCheckbox = document.getElementById('selectAllCheckbox');
+      if (masterCheckbox) {
+        masterCheckbox.checked = pageData.length > 0 && pageData.every(item => state.selectedIds.has(item.id));
+      }
+
+      pageData.forEach((item, index) => {
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-orange-50/50 transition';
-        const isChecked = selectedIds.has(item.id);
+        tr.className = "hover:bg-gray-50 transition";
+        const isChecked = state.selectedIds.has(item.id);
+
+        let catBadgeClass = "bg-blue-100 text-blue-800";
+        if (item.category === 'Bindamping') catBadgeClass = "bg-purple-100 text-purple-800";
+        if (item.category === 'Panitia') catBadgeClass = "bg-amber-100 text-amber-800";
+        if (item.category === 'Petugas Upacara') catBadgeClass = "bg-emerald-100 text-emerald-800";
+
+        const shareUrl = getVerificationUrl(item);
 
         tr.innerHTML = `
-          <td class="p-3.5 text-center">
-            <input type="checkbox" onchange="toggleSelectRow('${item.id}', this)" ${isChecked ? 'checked' : ''} class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
+          <td class="py-3 px-3 text-center">
+            <input type="checkbox" onchange="toggleSelectRow('${item.id}', this.checked)" ${isChecked ? 'checked' : ''}
+                   class="row-checkbox rounded border-gray-300 text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer">
           </td>
-          <td class="p-3.5 font-mono font-bold text-orange-600">${item.numCode}</td>
-          <td class="p-3.5 font-extrabold text-gray-900">${item.name}</td>
-          <td class="p-3.5 font-medium">${item.school}</td>
-          <td class="p-3.5"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${getCategoryBadgeClass(item.category)}">${item.category}</span></td>
-          <td class="p-3.5 font-mono text-[11px] text-gray-500">${item.certNo}</td>
-          <td class="p-3.5 text-center">
-            <div id="qr_thumb_${item.id}" class="w-8 h-8 mx-auto flex items-center justify-center bg-gray-100 rounded border"></div>
+          <td class="py-3 px-3 text-center text-gray-500 font-mono">${startIndex + index + 1}</td>
+          <td class="py-3 px-4 font-mono font-bold text-gray-900 text-xs">${item.certNo}</td>
+          <td class="py-3 px-4 font-bold text-gray-900 text-sm">${item.name || '<span class="text-red-400 italic">Kosong</span>'}</td>
+          <td class="py-3 px-4 text-gray-600">${item.school || '-'}</td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-0.5 rounded text-[11px] font-bold ${catBadgeClass}">${item.category}</span>
           </td>
-          <td class="p-3.5 text-right space-x-1">
-            <button onclick="openEditModal('${item.id}')" class="px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold rounded-lg transition">Edit</button>
-            <button onclick="confirmDelete('${item.id}')" class="px-2.5 py-1 bg-red-50 text-red-600 hover:bg-red-100 font-bold rounded-lg transition">Hapus</button>
+          <td class="py-3 px-4 text-center">
+            <div id="qr_thumb_${item.id}" class="w-7 h-7 mx-auto bg-gray-100 p-0.5 border rounded flex items-center justify-center"></div>
+          </td>
+          <td class="py-3 px-4 text-center">
+            <div class="flex items-center justify-center space-x-1">
+              <button onclick="loadCertByCode('${item.numCode}')" title="Lihat Tampilan Verifikasi" class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+              <button onclick="copyDirectLink('${shareUrl}')" title="Salin Link" class="p-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded transition">
+                <i class="fa-solid fa-copy"></i>
+              </button>
+              <button onclick="downloadCertForRecord('${item.id}')" title="Unduh Sertifikat" class="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded transition">
+                <i class="fa-solid fa-download"></i>
+              </button>
+              <button onclick="editRecord('${item.id}')" title="Edit" class="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded transition">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button onclick="confirmSingleDelete('${item.id}')" title="Hapus" class="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
           </td>
         `;
+
         tbody.appendChild(tr);
 
-        // Generate Thumb QR
         setTimeout(() => {
           const el = document.getElementById(`qr_thumb_${item.id}`);
           if (el) {
             el.innerHTML = '';
-            new QRCode(el, { text: generateQRUrl(item), width: 32, height: 32 });
+            new QRCode(el, { text: shareUrl, width: 28, height: 28, correctLevel: QRCode.CorrectLevel.L });
           }
-        }, 10);
+        }, 30);
       });
 
-      updateBulkToolbar();
+      renderPaginationControls(totalPages);
+      updateBulkActionBar();
     }
 
-    function getCategoryBadgeClass(cat) {
-      switch(cat) {
-        case 'Peserta': return 'bg-blue-100 text-blue-700';
-        case 'Bindamping': return 'bg-emerald-100 text-emerald-700';
-        case 'Panitia': return 'bg-purple-100 text-purple-700';
-        default: return 'bg-amber-100 text-amber-700';
-      }
-    }
+    function renderPaginationControls(totalPages) {
+      const container = document.getElementById('paginationControls');
+      container.innerHTML = '';
 
-    function changePageSize() {
-      pageSize = parseInt(document.getElementById('pageSizeSelect').value);
-      currentPage = 1;
-      renderAdminTable();
-    }
+      if (totalPages <= 1) return;
 
-    function prevPage() { if (currentPage > 1) { currentPage--; renderAdminTable(); } }
-    function nextPage() { currentPage++; renderAdminTable(); }
+      // Prev Button
+      const prevBtn = document.createElement('button');
+      prevBtn.disabled = state.currentPage === 1;
+      prevBtn.className = `px-2 py-1 rounded border text-xs font-bold transition ${state.currentPage === 1 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`;
+      prevBtn.innerHTML = `<i class="fa-solid fa-chevron-left"></i>`;
+      prevBtn.onclick = () => { state.currentPage--; renderAdminTableRowsOnly(); };
+      container.appendChild(prevBtn);
 
-    // --- SELECTION & BULK DELETE ---
-    function toggleSelectRow(id, cb) {
-      if (cb.checked) selectedIds.add(id); else selectedIds.delete(id);
-      updateBulkToolbar();
-    }
-
-    function toggleSelectAll(cb) {
-      const pageData = getFilteredData().slice((currentPage - 1) * pageSize, currentPage * pageSize);
-      pageData.forEach(item => {
-        if (cb.checked) selectedIds.add(item.id); else selectedIds.delete(item.id);
-      });
-      renderAdminTable();
-    }
-
-    function updateBulkToolbar() {
-      const count = selectedIds.size;
-      const toolbar = document.getElementById('bulkToolbar');
-      if (count > 0) {
-        toolbar.classList.remove('hidden');
-        document.getElementById('bulkCountText').innerText = `${count} terpilih`;
-      } else {
-        toolbar.classList.add('hidden');
-      }
-    }
-
-    function bulkDelete() {
-      customConfirm('Hapus Terpilih', `Apakah Anda yakin ingin menghapus ${selectedIds.size} data sertifikat yang dipilih?`, () => {
-        certDatabase = certDatabase.filter(c => !selectedIds.has(c.id));
-        selectedIds.clear();
-        saveDatabase();
-        renderAdminTable();
-        showToast('Data terpilih berhasil dihapus', 'success');
-      });
-    }
-
-    function confirmDelete(id) {
-      customConfirm('Hapus Data', 'Apakah Anda yakin ingin menghapus data ini?', () => {
-        certDatabase = certDatabase.filter(c => c.id !== id);
-        selectedIds.delete(id);
-        saveDatabase();
-        renderAdminTable();
-        showToast('Data berhasil dihapus', 'success');
-      });
-    }
-
-    // --- EXCEL IMPORT / EXPORT & AUTO NUMCODE INCREMENT ---
-    function openImportModal() { document.getElementById('importModal').classList.remove('hidden'); }
-    function closeImportModal() { document.getElementById('importModal').classList.add('hidden'); }
-
-    function downloadSampleExcel() {
-      const sample = [
-        { Nama: "FAEYZA KENZIE GIAR PRAMIYADI", Asal_Sekolah: "SMAIT Ummul Quro Bogor", Perihal: "Peserta" },
-        { Nama: "Siti Sarah", Asal_Sekolah: "SMPIT Nurul Fikri", Perihal: "Bindamping" },
-        { Nama: "Budi Santoso", Asal_Sekolah: "SDIT Wahdatul Ummah", Perihal: "Panitia" }
-      ];
-      const ws = XLSX.utils.json_to_sheet(sample);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Data Sertifikat");
-      XLSX.writeFile(wb, "Template_Import_Kembaranas3.xlsx");
-    }
-
-    function getMaxNumCode() {
-      let max = 0;
-      certDatabase.forEach(item => {
-        const num = parseInt(item.numCode);
-        if (!isNaN(num) && num > max) max = num;
-      });
-      return max;
-    }
-
-    function processExcelImport() {
-      const fileInput = document.getElementById('excelFile');
-      if (!fileInput.files.length) { showToast('Pilih file Excel terlebih dahulu!', 'warning'); return; }
-
-      const mode = document.querySelector('input[name="importMode"]:checked').value;
-      const file = fileInput.files[0];
-      const reader = new FileReader();
-
-      reader.onload = function(e) {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-
-          if (!jsonData.length) { showToast('File Excel kosong!', 'warning'); return; }
-
-          let startNum = (mode === 'overwrite') ? 1 : getMaxNumCode() + 1;
-          let newRecords = [];
-
-          jsonData.forEach((row, idx) => {
-            const name = row.Nama || row.Nama_Lengkap || row['Nama Lengkap'] || row.NAMA || 'Tanpa Nama';
-            const school = row.Asal_Sekolah || row['Asal Sekolah'] || row.Sekolah || '-';
-            const cat = row.Perihal || row.Kategori || row.Jenis || 'Peserta';
-
-            const numStr = String(startNum + idx).padStart(4, '0');
-            newRecords.push({
-              id: String(Date.now() + idx),
-              numCode: numStr,
-              name: String(name).trim(),
-              school: String(school).trim(),
-              category: String(cat).trim(),
-              certNo: `No. ${numStr}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`,
-              date: "31 Oktober 2026"
-            });
-          });
-
-          if (mode === 'overwrite') {
-            certDatabase = newRecords;
-          } else {
-            certDatabase = [...certDatabase, ...newRecords];
-          }
-
-          saveDatabase();
-          closeImportModal();
-          renderAdminTable();
-          showToast(`Berhasil mengimport ${newRecords.length} data sertifikat!`, 'success');
-        } catch (err) {
-          showToast('Gagal memproses file Excel!', 'danger');
+      // Page Numbers
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= state.currentPage - 1 && i <= state.currentPage + 1)) {
+          const btn = document.createElement('button');
+          btn.className = `px-2.5 py-1 rounded border text-xs font-bold transition ${i === state.currentPage ? 'bg-brand-navy text-white border-brand-navy' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`;
+          btn.innerText = i;
+          btn.onclick = () => { state.currentPage = i; renderAdminTableRowsOnly(); };
+          container.appendChild(btn);
+        } else if (i === state.currentPage - 2 || i === state.currentPage + 2) {
+          const dots = document.createElement('span');
+          dots.className = "px-1 text-gray-400 font-bold";
+          dots.innerText = "...";
+          container.appendChild(dots);
         }
-      };
-      reader.readAsArrayBuffer(file);
+      }
+
+      // Next Button
+      const nextBtn = document.createElement('button');
+      nextBtn.disabled = state.currentPage === totalPages;
+      nextBtn.className = `px-2 py-1 rounded border text-xs font-bold transition ${state.currentPage === totalPages ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`;
+      nextBtn.innerHTML = `<i class="fa-solid fa-chevron-right"></i>`;
+      nextBtn.onclick = () => { state.currentPage++; renderAdminTableRowsOnly(); };
+      container.appendChild(nextBtn);
     }
 
-    function exportExcel() {
-      const ws = XLSX.utils.json_to_sheet(certDatabase.map(c => ({
-        "No. Unik": c.numCode,
+    // MULTI SELECT SELECTION & BATCH ACTIONS
+    function toggleSelectAll(masterCb) {
+      const filtered = getFilteredData();
+      const startIndex = (state.currentPage - 1) * state.pageSize;
+      const endIndex = Math.min(startIndex + state.pageSize, filtered.length);
+      const pageData = filtered.slice(startIndex, endIndex);
+
+      pageData.forEach(item => {
+        if (masterCb.checked) state.selectedIds.add(item.id);
+        else state.selectedIds.delete(item.id);
+      });
+
+      renderAdminTableRowsOnly();
+    }
+
+    function toggleSelectRow(id, isChecked) {
+      if (isChecked) state.selectedIds.add(id);
+      else state.selectedIds.delete(id);
+      renderAdminTableRowsOnly();
+    }
+
+    function clearSelection() {
+      state.selectedIds.clear();
+      renderAdminTableRowsOnly();
+    }
+
+    function updateBulkActionBar() {
+      const bar = document.getElementById('bulkActionBar');
+      const badge = document.getElementById('selectedCountBadge');
+      if (state.selectedIds.size > 0) {
+        bar.classList.remove('hidden');
+        badge.innerText = state.selectedIds.size;
+      } else {
+        bar.classList.add('hidden');
+      }
+    }
+
+    function confirmBulkDelete() {
+      const count = state.selectedIds.size;
+      if (count === 0) return;
+
+      openConfirmModal({
+        title: "Hapus Data Terpilih",
+        message: `Apakah Anda yakin ingin menghapus ${count} data sertifikat yang dipilih?`,
+        icon: "fa-trash-can",
+        iconBg: "bg-red-100 text-red-600",
+        proceedText: "Ya, Hapus Semua",
+        onProceed: () => {
+          state.certificates = state.certificates.filter(c => !state.selectedIds.has(c.id));
+          state.selectedIds.clear();
+          saveCertificatesToStorage();
+          renderAdminTable();
+          showToast(`Berhasil menghapus ${count} data sertifikat!`, "success");
+        }
+      });
+    }
+
+    function confirmSingleDelete(id) {
+      const target = state.certificates.find(c => c.id === id);
+      if (!target) return;
+
+      openConfirmModal({
+        title: "Hapus Data Sertifikat",
+        message: `Apakah Anda yakin ingin menghapus sertifikat an. "${target.name}"?`,
+        icon: "fa-trash-can",
+        iconBg: "bg-red-100 text-red-600",
+        proceedText: "Hapus Data",
+        onProceed: () => {
+          state.certificates = state.certificates.filter(c => c.id !== id);
+          state.selectedIds.delete(id);
+          saveCertificatesToStorage();
+          renderAdminTable();
+          showToast("Data sertifikat berhasil dihapus!", "success");
+        }
+      });
+    }
+
+    function copyDirectLink(url) {
+      const tempInput = document.createElement('input');
+      tempInput.value = url;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      showToast("Tautan langsung berhasil disalin!", "success");
+    }
+
+    // EXPORT DATA TO EXCEL
+    function exportDataToExcel(records = null) {
+      const dataToExport = records || getFilteredData();
+      if (dataToExport.length === 0) {
+        showToast("Tidak ada data untuk diexport!", "warning");
+        return;
+      }
+
+      const rows = dataToExport.map((c, i) => ({
+        "No": i + 1,
+        "No Sertifikat": c.certNo,
+        "No Urut": c.numCode,
         "Nama Lengkap": c.name,
         "Asal Sekolah": c.school,
         "Kategori": c.category,
-        "Nomor Sertifikat": c.certNo
-      })));
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Sertifikat");
-      XLSX.writeFile(wb, "Export_Sertifikat_Kembaranas3.xlsx");
+        "Link Verifikasi": getVerificationUrl(c.numCode)
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Sertifikat Kembaranas III");
+      XLSX.writeFile(workbook, `Data_Sertifikat_Kembaranas_III.xlsx`);
+      showToast("Data Excel berhasil diunduh!", "success");
     }
 
-    // --- ADD / EDIT MANUAL ---
+    function exportSelectedData() {
+      const selectedRecords = state.certificates.filter(c => state.selectedIds.has(c.id));
+      exportDataToExcel(selectedRecords);
+    }
+
+    // ADD / EDIT RECORD MODAL LOGIC
     function openAddModal() {
-      document.getElementById('editCertId').value = '';
-      document.getElementById('certModalTitle').innerText = 'Tambah Sertifikat Baru';
+      document.getElementById('editRecordId').value = '';
+      document.getElementById('addEditModalTitle').innerText = 'Tambah Data Sertifikat Baru';
+      
+      let nextNum = 1;
+      if (state.certificates.length > 0) {
+        const nums = state.certificates.map(c => parseInt(c.numCode) || 0);
+        nextNum = Math.max(...nums) + 1;
+      }
+      const codeStr = String(nextNum).padStart(4, '0');
+
+      document.getElementById('formNumCode').value = codeStr;
       document.getElementById('formName').value = '';
       document.getElementById('formSchool').value = '';
       document.getElementById('formCategory').value = 'Peserta';
-      document.getElementById('certModal').classList.remove('hidden');
+      updateFormPreviewCertNo();
+
+      document.getElementById('addEditModal').classList.remove('hidden');
     }
 
-    function openEditModal(id) {
-      const item = certDatabase.find(c => c.id === id);
-      if (!item) return;
-      document.getElementById('editCertId').value = item.id;
-      document.getElementById('certModalTitle').innerText = 'Edit Data Sertifikat';
-      document.getElementById('formName').value = item.name;
-      document.getElementById('formSchool').value = item.school;
-      document.getElementById('formCategory').value = item.category;
-      document.getElementById('certModal').classList.remove('hidden');
+    function closeAddEditModal() {
+      document.getElementById('addEditModal').classList.add('hidden');
     }
 
-    function closeCertModal() { document.getElementById('certModal').classList.add('hidden'); }
+    function updateFormPreviewCertNo() {
+      const numCode = document.getElementById('formNumCode').value.padStart(4, '0');
+      document.getElementById('previewFormCertNo').innerText = `${numCode}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`;
+    }
 
-    function handleCertFormSubmit(e) {
+    function editRecord(id) {
+      const target = state.certificates.find(c => c.id === id);
+      if (!target) return;
+
+      document.getElementById('editRecordId').value = target.id;
+      document.getElementById('addEditModalTitle').innerText = 'Edit Data Sertifikat';
+      document.getElementById('formNumCode').value = target.numCode;
+      document.getElementById('formName').value = target.name;
+      document.getElementById('formSchool').value = target.school;
+      document.getElementById('formCategory').value = target.category;
+      updateFormPreviewCertNo();
+
+      document.getElementById('addEditModal').classList.remove('hidden');
+    }
+
+    function handleSaveRecord(e) {
       e.preventDefault();
-      const id = document.getElementById('editCertId').value;
-      const name = document.getElementById('formName').value.trim();
+      const editId = document.getElementById('editRecordId').value;
+      const numCode = document.getElementById('formNumCode').value.padStart(4, '0');
+      const name = document.getElementById('formName').value.trim().toUpperCase();
       const school = document.getElementById('formSchool').value.trim();
-      const cat = document.getElementById('formCategory').value;
+      const category = document.getElementById('formCategory').value;
+      const certNo = `${numCode}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`;
 
-      if (id) {
-        const item = certDatabase.find(c => c.id === id);
-        if (item) { item.name = name; item.school = school; item.category = cat; }
+      if (editId) {
+        const idx = state.certificates.findIndex(c => c.id === editId);
+        if (idx !== -1) {
+          state.certificates[idx] = {
+            ...state.certificates[idx],
+            numCode, name, school, category, certNo
+          };
+          showToast("Data sertifikat berhasil diperbarui!", "success");
+        }
       } else {
-        const nextNum = String(getMaxNumCode() + 1).padStart(4, '0');
-        certDatabase.push({
-          id: String(Date.now()),
-          numCode: nextNum,
-          name: name,
-          school: school,
-          category: cat,
-          certNo: `No. ${nextNum}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`,
-          date: "31 Oktober 2026"
-        });
+        const newRecord = {
+          id: numCode,
+          numCode, name, school, category, certNo,
+          locationDate: "Bandar Lampung, 31 Oktober 2026",
+          sakoOrg: "JSIT Wilayah Lampung",
+          signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III",
+          subject: `Sertifikat ${category} Kembaranas III SAKO SIT`
+        };
+        state.certificates.push(newRecord);
+        showToast("Data sertifikat baru berhasil ditambahkan!", "success");
       }
 
-      saveDatabase();
-      closeCertModal();
+      saveCertificatesToStorage();
+      closeAddEditModal();
       renderAdminTable();
-      showToast('Data berhasil disimpan!', 'success');
     }
 
-    // --- GENERATE QR URL PAYLOAD (ENCODED FOR ANY MOBILE DEVICE) ---
-    function generateQRUrl(item) {
-      const baseUrl = window.location.origin + window.location.pathname;
-      const payloadObj = { c: item.certNo, n: item.name, s: item.school, t: item.category };
-      const vPayload = btoa(unescape(encodeURIComponent(JSON.stringify(payloadObj))));
-      return `${baseUrl}?id=${item.numCode}&v=${vPayload}`;
-    }
-
-    // --- CANVAS EDITOR & LAYOUT SETTINGS ---
-    function loadCategoryTemplateSettings() {
-      const cat = document.getElementById('canvasCategorySelect').value;
-      const set = layoutSettings[cat] || layoutSettings['Peserta'];
-
-      document.getElementById('posYName').value = set.yName;
-      document.getElementById('valYName').innerText = set.yName;
-      document.getElementById('fontSizeName').value = set.sizeName;
-      document.getElementById('valSizeName').innerText = set.sizeName;
-      document.getElementById('colorName').value = set.colorName || '#000000';
-
-      document.getElementById('posXCertNo').value = set.xCertNo;
-      document.getElementById('valXCertNo').innerText = set.xCertNo;
-      document.getElementById('posYCertNo').value = set.yCertNo;
-      document.getElementById('valYCertNo').innerText = set.yCertNo;
-      document.getElementById('fontSizeCertNo').value = set.sizeCertNo;
-      document.getElementById('valSizeCertNo').innerText = set.sizeCertNo;
-      document.getElementById('colorCertNo').value = set.colorCertNo || '#666666';
-
-      document.getElementById('posYSchool').value = set.ySchool;
-      document.getElementById('valYSchool').innerText = set.ySchool;
-      document.getElementById('fontSizeSchool').value = set.sizeSchool;
-      document.getElementById('valSizeSchool').innerText = set.sizeSchool;
-      document.getElementById('colorSchool').value = set.colorSchool || '#333333';
-
-      document.getElementById('posXQR').value = set.xQR;
-      document.getElementById('valXQR').innerText = set.xQR;
-      document.getElementById('posYQR').value = set.yQR;
-      document.getElementById('valYQR').innerText = set.yQR;
-      document.getElementById('sizeQR').value = set.sizeQR;
-      document.getElementById('valSizeQR').innerText = set.sizeQR;
-
-      updateCanvasPreview();
-    }
-
-    function handleBgUpload(e) {
-      const cat = document.getElementById('canvasCategorySelect').value;
+    // EXCEL FILE IMPORT PARSER
+    function handleFileUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
 
+      const importMode = document.querySelector('input[name="importMode"]:checked')?.value || 'append';
+
       const reader = new FileReader();
       reader.onload = function(evt) {
-        const img = new Image();
-        img.onload = function() {
-          // Compress Image background max width 1600px, quality 0.72 JPEG
-          const canvas = document.createElement('canvas');
-          const maxW = 1600;
-          let w = img.width, h = img.height;
-          if (w > maxW) { h = Math.round((h * maxW) / w); w = maxW; }
-          canvas.width = w; canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
-          
-          layoutSettings[cat].bgData = canvas.toDataURL('image/jpeg', 0.72);
-          updateCanvasPreview();
-          showToast(`Background template ${cat} diperbarui!`, 'success');
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+          if (!json || json.length === 0) {
+            showToast("File Excel kosong atau tidak terbaca!", "error");
+            return;
+          }
+
+          state.importPreviewData = [];
+          let startingSeq = 1;
+
+          if (importMode === 'append') {
+            startingSeq = getMaxNumCode() + 1;
+          }
+
+          json.forEach((row, i) => {
+            const nameVal = getExcelColumnValue(row, ['Nama Lengkap', 'Nama_Lengkap', 'Nama Peserta', 'NAMA', 'Nama']);
+            const schoolVal = getExcelColumnValue(row, ['Asal Sekolah', 'Asal_Sekolah', 'Sekolah', 'INSTANSI', 'Instansi']);
+            const categoryVal = getExcelColumnValue(row, ['Kategori', 'Perihal', 'Jenis']) || 'Peserta';
+            let excelNumCode = getExcelColumnValue(row, ['No Urut', 'No_Urut', 'ID', 'Nomor']);
+
+            let numCodeVal;
+            if (importMode === 'append') {
+              // Mode Append: Otomatis melanjutkan urutan nomor dari database terhitung
+              numCodeVal = String(startingSeq + i).padStart(4, '0');
+            } else {
+              // Mode Overwrite: Menggunakan nomor di excel atau urutan 1
+              if (excelNumCode) numCodeVal = String(excelNumCode).padStart(4, '0');
+              else numCodeVal = String(i + 1).padStart(4, '0');
+            }
+
+            if (nameVal) {
+              state.importPreviewData.push({
+                numCode: numCodeVal,
+                name: String(nameVal).trim().toUpperCase(),
+                school: String(schoolVal).trim() || '-',
+                category: String(categoryVal).trim() || 'Peserta',
+                certNo: `${numCodeVal}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`
+              });
+            }
+          });
+
+          renderImportPreviewTable(importMode, startingSeq);
+          showToast(`Berhasil membaca ${state.importPreviewData.length} baris dari Excel (${importMode === 'append' ? 'Mode Append mulai No ' + String(startingSeq).padStart(4, '0') : 'Mode Overwrite'})!`, "success");
+        } catch (err) {
+          console.error(err);
+          showToast("Gagal memproses file Excel!", "error");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      e.target.value = '';
+    }
+
+    function getExcelColumnValue(rowObj, potentialKeys) {
+      const rowKeys = Object.keys(rowObj);
+      for (let pKey of potentialKeys) {
+        const foundKey = rowKeys.find(k => k.trim().toLowerCase() === pKey.toLowerCase());
+        if (foundKey && rowObj[foundKey]) return rowObj[foundKey];
+      }
+      return "";
+    }
+
+    function renderImportPreviewTable(mode = 'append', startingSeq = 1) {
+      const container = document.getElementById('importPreviewContainer');
+      const tbody = document.getElementById('importPreviewTableBody');
+      const countEl = document.getElementById('importPreviewCount');
+      const badgeEl = document.getElementById('importModeInfoBadge');
+
+      container.classList.remove('hidden');
+      countEl.innerText = state.importPreviewData.length;
+
+      if (badgeEl) {
+        if (mode === 'append') {
+          badgeEl.innerHTML = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md font-bold text-xs"><i class="fa-solid fa-plus-circle mr-1"></i> Mode Append (Mulai No: ${String(startingSeq).padStart(4, '0')})</span>`;
+        } else {
+          badgeEl.innerHTML = `<span class="px-2.5 py-1 bg-red-100 text-red-800 rounded-md font-bold text-xs"><i class="fa-solid fa-arrows-rotate mr-1"></i> Mode Timpa Semua</span>`;
+        }
+      }
+
+      tbody.innerHTML = '';
+
+      state.importPreviewData.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-gray-50";
+        tr.innerHTML = `
+          <td class="p-2 border-b text-center font-mono">${idx + 1}</td>
+          <td class="p-2 border-b font-bold text-gray-900">${item.name}</td>
+          <td class="p-2 border-b">${item.school}</td>
+          <td class="p-2 border-b"><span class="px-2 py-0.5 bg-brand-red/10 text-brand-red rounded font-bold">${item.category}</span></td>
+          <td class="p-2 border-b font-mono">${item.numCode}</td>
+          <td class="p-2 border-b font-mono font-bold text-emerald-700">${item.certNo}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function processBatchImport() {
+      if (state.importPreviewData.length === 0) return;
+
+      const importMode = document.querySelector('input[name="importMode"]:checked')?.value || 'append';
+
+      if (importMode === 'overwrite') {
+        openConfirmModal({
+          title: "Konfirmasi Timpa Semua Data",
+          message: `PERHATIAN: Mode Overwrite akan MENGHAPUS SELURUH ${state.certificates.length} data lama dan menggantikannya dengan ${state.importPreviewData.length} data baru dari Excel. Lanjutkan?`,
+          icon: "fa-triangle-exclamation",
+          iconBg: "bg-red-100 text-red-600",
+          proceedText: "Ya, Ganti Semua Data",
+          onProceed: () => {
+            executeImportProcess(true);
+          }
+        });
+      } else {
+        executeImportProcess(false);
+      }
+    }
+
+    function executeImportProcess(isOverwrite) {
+      if (isOverwrite) {
+        state.certificates = [];
+      }
+
+      let addedCount = 0;
+      let updatedCount = 0;
+
+      state.importPreviewData.forEach(item => {
+        const existingIdx = state.certificates.findIndex(c => c.id === item.numCode || c.numCode === item.numCode);
+        const newRecord = {
+          id: item.numCode,
+          numCode: item.numCode,
+          name: item.name,
+          school: item.school,
+          category: item.category,
+          certNo: item.certNo,
+          locationDate: "Bandar Lampung, 31 Oktober 2026",
+          sakoOrg: "JSIT Wilayah Lampung",
+          signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III",
+          subject: `Sertifikat ${item.category} Kembaranas III SAKO SIT`
         };
-        img.src = evt.target.result;
+
+        if (existingIdx !== -1) {
+          state.certificates[existingIdx] = newRecord;
+          updatedCount++;
+        } else {
+          state.certificates.push(newRecord);
+          addedCount++;
+        }
+      });
+
+      saveCertificatesToStorage();
+      showToast(`Berhasil mengimpor! (${addedCount} data baru ditambahkan, ${updatedCount} diperbarui. Total: ${state.certificates.length} data)`, "success");
+      state.importPreviewData = [];
+      document.getElementById('importPreviewContainer').classList.add('hidden');
+      switchAdminTab('data');
+    }
+
+    function downloadExcelTemplate() {
+      const sampleRows = [
+        { "No_Urut": "0001", "Nama Lengkap": "FAEYZA KENZIE GIAR PRAMIYADI", "Asal Sekolah": "SMAIT Ummul Quro Bogor", "Kategori": "Peserta" },
+        { "No_Urut": "0002", "Nama Lengkap": "Ustadz Ahmad Fauzi, S.Pd.", "Asal Sekolah": "SMPIT Al-Kautsar", "Kategori": "Bindamping" },
+        { "No_Urut": "0003", "Nama Lengkap": "Siti Nurhaliza, S.T.", "Asal Sekolah": "Pinsako SIT Wilayah Lampung", "Kategori": "Panitia" },
+        { "No_Urut": "0004", "Nama Lengkap": "Muhammad Rizky Pratama", "Asal Sekolah": "SMAIT Luqman Al-Hakim", "Kategori": "Petugas Upacara" }
+      ];
+
+      const ws = XLSX.utils.json_to_sheet(sampleRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Template Peserta");
+      XLSX.writeFile(wb, "Template_Import_Sertifikat_Kembaranas_III.xlsx");
+      showToast("Template Excel berhasil diunduh!", "info");
+    }
+
+    // CANVAS EDITOR LOGIC & PER-CATEGORY LAYOUT PERSISTENCE
+    function onEditorCategoryChange() {
+      const cat = document.getElementById('editorCategorySelect').value;
+      document.getElementById('canvasCategoryBadge').innerText = cat;
+      
+      const layout = state.layouts[cat] || DEFAULT_LAYOUTS[cat];
+      
+      document.getElementById('posYName').value = layout.posYName;
+      document.getElementById('fontSizeName').value = layout.fontSizeName;
+      document.getElementById('posYSchool').value = layout.posYSchool;
+      document.getElementById('fontSizeSchool').value = layout.fontSizeSchool;
+      document.getElementById('showCertNo').checked = layout.showCertNo;
+      document.getElementById('posXCertNo').value = layout.posXCertNo;
+      document.getElementById('posYCertNo').value = layout.posYCertNo;
+      document.getElementById('fontSizeCertNo').value = layout.fontSizeCertNo;
+      document.getElementById('colorCertNo').value = layout.colorCertNo || '#334155';
+      document.getElementById('posXQR').value = layout.posXQR;
+      document.getElementById('posYQR').value = layout.posYQR;
+
+      const bgRemoveDiv = document.getElementById('bgRemoveContainer');
+      if (layout.bgImage) bgRemoveDiv.classList.remove('hidden');
+      else bgRemoveDiv.classList.add('hidden');
+
+      renderCertCanvas();
+    }
+
+    function onLayoutInputChange() {
+      const cat = document.getElementById('editorCategorySelect').value;
+      if (!state.layouts[cat]) state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat] };
+
+      state.layouts[cat].posYName = parseInt(document.getElementById('posYName').value);
+      state.layouts[cat].fontSizeName = parseInt(document.getElementById('fontSizeName').value);
+      state.layouts[cat].posYSchool = parseInt(document.getElementById('posYSchool').value);
+      state.layouts[cat].fontSizeSchool = parseInt(document.getElementById('fontSizeSchool').value);
+      state.layouts[cat].showCertNo = document.getElementById('showCertNo').checked;
+      state.layouts[cat].posXCertNo = parseInt(document.getElementById('posXCertNo').value);
+      state.layouts[cat].posYCertNo = parseInt(document.getElementById('posYCertNo').value);
+      state.layouts[cat].fontSizeCertNo = parseInt(document.getElementById('fontSizeCertNo').value);
+      state.layouts[cat].colorCertNo = document.getElementById('colorCertNo').value;
+    // CANVAS IMAGE COMPRESSION LOGIC (MAX 1600px width/height, JPEG 72% quality ~200-400KB)
+    function handleBgImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const cat = document.getElementById('editorCategorySelect').value;
+      const reader = new FileReader();
+
+      reader.onload = function(evt) {
+        const tempImg = new Image();
+        tempImg.onload = function() {
+          const offCanvas = document.createElement('canvas');
+          let width = tempImg.width;
+          let height = tempImg.height;
+          const maxDim = 1600;
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          offCanvas.width = width;
+          offCanvas.height = height;
+          const offCtx = offCanvas.getContext('2d');
+          offCtx.drawImage(tempImg, 0, 0, width, height);
+
+          // Compress to JPEG 72%
+          const compressedDataUrl = offCanvas.toDataURL('image/jpeg', 0.72);
+
+          const finalImg = new Image();
+          finalImg.onload = function() {
+            state.loadedBgImages[cat] = finalImg;
+            if (!state.layouts[cat]) state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat] };
+            state.layouts[cat].bgImage = compressedDataUrl;
+
+            const savedOk = saveLayoutSettings();
+            document.getElementById('bgRemoveContainer').classList.remove('hidden');
+            renderCertCanvas();
+            if (savedOk) {
+              showToast(`Background custom kategori ${cat} tersimpan permanen!`, "success");
+            }
+          };
+          finalImg.src = compressedDataUrl;
+        };
+        tempImg.src = evt.target.result;
       };
       reader.readAsDataURL(file);
     }
 
-    function updateCanvasPreview() {
-      const cat = document.getElementById('canvasCategorySelect').value;
-      const set = layoutSettings[cat];
-
-      set.yName = parseInt(document.getElementById('posYName').value);
-      set.sizeName = parseInt(document.getElementById('fontSizeName').value);
-      set.colorName = document.getElementById('colorName').value;
-
-      set.xCertNo = parseInt(document.getElementById('posXCertNo').value);
-      set.yCertNo = parseInt(document.getElementById('posYCertNo').value);
-      set.sizeCertNo = parseInt(document.getElementById('fontSizeCertNo').value);
-      set.colorCertNo = document.getElementById('colorCertNo').value;
-
-      set.ySchool = parseInt(document.getElementById('posYSchool').value);
-      set.sizeSchool = parseInt(document.getElementById('fontSizeSchool').value);
-      set.colorSchool = document.getElementById('colorSchool').value;
-
-      set.xQR = parseInt(document.getElementById('posXQR').value);
-      set.yQR = parseInt(document.getElementById('posYQR').value);
-      set.sizeQR = parseInt(document.getElementById('sizeQR').value);
-
-      // Update Labels
-      document.getElementById('valYName').innerText = set.yName;
-      document.getElementById('valSizeName').innerText = set.sizeName;
-      document.getElementById('valXCertNo').innerText = set.xCertNo;
-      document.getElementById('valYCertNo').innerText = set.yCertNo;
-      document.getElementById('valSizeCertNo').innerText = set.sizeCertNo;
-      document.getElementById('valYSchool').innerText = set.ySchool;
-      document.getElementById('valSizeSchool').innerText = set.sizeSchool;
-      document.getElementById('valXQR').innerText = set.xQR;
-      document.getElementById('valYQR').innerText = set.yQR;
-      document.getElementById('valSizeQR').innerText = set.sizeQR;
-
-      renderCanvas(set, certDatabase[0] || initialSeed[0]);
-    }
-
-    function renderCanvas(set, sample) {
-      const canvas = document.getElementById('certCanvas');
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      if (set.bgData) {
-        const bg = new Image();
-        bg.onload = function() {
-          ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-          drawCanvasText(ctx, set, sample);
-        };
-        bg.src = set.bgData;
-      } else {
-        // Fallback default background canvas template
-        ctx.fillStyle = '#fdfbf7';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = '#d97706';
-        ctx.lineWidth = 10;
-        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
-
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 36px "Plus Jakarta Sans"';
-        ctx.textAlign = 'center';
-        ctx.fillText('SERTIFIKAT KEMBARANAS III', canvas.width / 2, 240);
-        
-        drawCanvasText(ctx, set, sample);
+    function removeCategoryBgImage() {
+      const cat = document.getElementById('editorCategorySelect').value;
+      if (state.layouts[cat]) {
+        state.layouts[cat].bgImage = null;
+        delete state.loadedBgImages[cat];
+        saveLayoutSettings();
+        document.getElementById('bgRemoveContainer').classList.add('hidden');
+        renderCertCanvas();
+        showToast(`Background custom kategori ${cat} berhasil dihapus`, "info");
       }
     }
 
-    function drawCanvasText(ctx, set, sample) {
-      // Draw Single Full Cert No
-      ctx.fillStyle = set.colorCertNo || '#666666';
-      ctx.font = `bold ${set.sizeCertNo}px "Plus Jakarta Sans"`;
-      ctx.textAlign = 'center';
-      ctx.fillText(sample.certNo, set.xCertNo, set.yCertNo);
+    function resetCategoryLayout() {
+      const cat = document.getElementById('editorCategorySelect').value;
+      state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat], bgImage: state.layouts[cat]?.bgImage || null };
+      saveLayoutSettings();
+      onEditorCategoryChange();
+      showToast(`Layout posisi kategori ${cat} direset ke default`, "info");
+    }
 
-      // Draw Nama
-      ctx.fillStyle = set.colorName || '#000000';
-      ctx.font = `extrabold ${set.sizeName}px "Plus Jakarta Sans"`;
-      ctx.textAlign = 'center';
-      ctx.fillText(sample.name, canvas.width / 2, set.yName);
+    // REAL-TIME CANVAS CERTIFICATE RENDERER
+    function renderCertCanvas(sampleCert = null) {
+      const canvas = document.getElementById('certCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
 
-      // Draw Sekolah
-      ctx.fillStyle = set.colorSchool || '#333333';
-      ctx.font = `bold ${set.sizeSchool}px "Plus Jakarta Sans"`;
-      ctx.textAlign = 'center';
-      ctx.fillText(sample.school, canvas.width / 2, set.ySchool);
+      const category = document.getElementById('editorCategorySelect')?.value || 'Peserta';
+      const layout = state.layouts[category] || DEFAULT_LAYOUTS[category];
 
-      // Draw QR Code
-      const qrDiv = document.createElement('div');
-      new QRCode(qrDiv, { text: generateQRUrl(sample), width: set.sizeQR, height: set.sizeQR });
+      const cert = sampleCert || state.certificates.find(c => c.category === category) || {
+        name: "FAEYZA KENZIE GIAR PRAMIYADI", 
+        school: "SMAIT Ummul Quro Bogor",
+        certNo: "0001-0247/KEMBARANAS-III/SAKO-SIT/X/2026", 
+        category: category, 
+        numCode: "0001"
+      };
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Render Custom Compressed Background OR Fallback Frame
+      if (state.loadedBgImages[category]) {
+        ctx.drawImage(state.loadedBgImages[category], 0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.fillStyle = "#fdfbf7";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = "#fa4622"; ctx.lineWidth = 14;
+        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+        
+        ctx.strokeStyle = "#d97706"; ctx.lineWidth = 3;
+        ctx.strokeRect(34, 34, canvas.width - 68, canvas.height - 68);
+
+        ctx.fillStyle = "#fa4622";
+        ctx.beginPath(); ctx.arc(canvas.width / 2, 85, 45, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#ffffff"; ctx.font = "bold 28px FontAwesome"; ctx.textAlign = "center";
+        ctx.fillText("\uf6ec", canvas.width / 2, 94);
+
+        ctx.fillStyle = "#0f172a"; ctx.font = "bold 32px 'Plus Jakarta Sans', sans-serif";
+        ctx.fillText("SERTIFIKAT PENGHARGAAN", canvas.width / 2, 180);
+        
+        ctx.fillStyle = "#d97706"; ctx.font = "bold 16px 'Plus Jakarta Sans', sans-serif";
+        ctx.fillText(`KEMBARANAS III SAKO SIT - ${category.toUpperCase()}`, canvas.width / 2, 215);
+      }
+
+      // Render Certificate Number (Single Source)
+      if (layout.showCertNo) {
+        ctx.save();
+        ctx.fillStyle = layout.colorCertNo || "#334155";
+        ctx.font = `bold ${layout.fontSizeCertNo}px 'Plus Jakarta Sans', monospace, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.fillText(`No. ${cert.certNo}`, layout.posXCertNo, layout.posYCertNo);
+        ctx.restore();
+      }
+
+      // Render Recipient Name
+      ctx.fillStyle = "#1e1b4b"; 
+      ctx.font = `bold ${layout.fontSizeName}px 'Plus Jakarta Sans', sans-serif`; 
+      ctx.textAlign = "center";
+      ctx.fillText(cert.name, canvas.width / 2, layout.posYName);
+
+      // Render School / Institution
+      ctx.fillStyle = "#475569"; 
+      ctx.font = `500 ${layout.fontSizeSchool}px 'Plus Jakarta Sans', sans-serif`; 
+      ctx.textAlign = "center";
+      ctx.fillText(cert.school, canvas.width / 2, layout.posYSchool);
+
+      // Render QR Code onto Canvas Dynamically with Embedded Identity Payload
+      const qrTempDiv = document.createElement('div');
+      const shareUrl = getVerificationUrl(cert);
+      new QRCode(qrTempDiv, { text: shareUrl, width: 140, height: 140 });
+
       setTimeout(() => {
-        const qrImg = qrDiv.querySelector('img');
-        if (qrImg) {
+        const qrImg = qrTempDiv.querySelector('img');
+        if (qrImg && qrImg.src) {
           const img = new Image();
-          img.onload = () => ctx.drawImage(img, set.xQR, set.yQR, set.sizeQR, set.sizeQR);
+          img.onload = function() {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(layout.posXQR - 10, layout.posYQR - 10, 160, 160);
+            ctx.strokeStyle = "#e2e8f0"; ctx.lineWidth = 2;
+            ctx.strokeRect(layout.posXQR - 10, layout.posYQR - 10, 160, 160);
+            ctx.drawImage(img, layout.posXQR, layout.posYQR, 140, 140);
+          };
           img.src = qrImg.src;
         }
       }, 50);
     }
 
-    function saveLayoutSettings() {
-      try {
-        localStorage.setItem(LAYOUT_KEY, JSON.stringify(layoutSettings));
-        showToast('Pengaturan Layout & Template berhasil disimpan!', 'success');
-      } catch (e) {
-        showToast('Gagal menyimpan layout! Ukuran gambar background terlalu besar.', 'danger');
+    function downloadTestCanvasImage() {
+      const canvas = document.getElementById('certCanvas');
+      const link = document.createElement('a');
+      link.download = `Sertifikat_Kembaranas_III.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast("Sertifikat PNG berhasil diunduh!", "success");
+    }
+
+    function downloadCertForRecord(id) {
+      const rec = state.certificates.find(c => c.id === id);
+      if (!rec) return;
+
+      const currentCatSelect = document.getElementById('editorCategorySelect');
+      if (currentCatSelect) currentCatSelect.value = rec.category;
+
+      renderCertCanvas(rec);
+      setTimeout(() => downloadTestCanvasImage(), 150);
+    }
+
+    function downloadActivePublicCert() {
+      if (state.activeCert) downloadCertForRecord(state.activeCert.id);
+    }
+
+    // CUSTOM MODAL CONFIRMATION DIALOG
+    function openConfirmModal(opts) {
+      document.getElementById('confirmModalTitle').innerText = opts.title || "Konfirmasi Tindakan";
+      document.getElementById('confirmModalMessage').innerText = opts.message || "Apakah Anda yakin?";
+      
+      const iconEl = document.getElementById('confirmModalIcon');
+      const iconContainer = document.getElementById('confirmModalIconContainer');
+      
+      iconEl.className = `fa-solid ${opts.icon || 'fa-triangle-exclamation'}`;
+      iconContainer.className = `w-14 h-14 rounded-full mx-auto flex items-center justify-center text-2xl ${opts.iconBg || 'bg-red-100 text-red-600'}`;
+      
+      document.getElementById('confirmBtnProceed').innerText = opts.proceedText || "Lanjutkan";
+      state.confirmCallback = opts.onProceed || null;
+
+      document.getElementById('customConfirmModal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal(proceed) {
+      document.getElementById('customConfirmModal').classList.add('hidden');
+      if (proceed && state.confirmCallback) {
+        state.confirmCallback();
       }
+      state.confirmCallback = null;
+    }
+
+    // CUSTOM TOAST NOTIFICATION SYSTEM
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+
+      let bg = "bg-gray-900 text-white";
+      let icon = "fa-circle-info";
+
+      if (type === 'success') { bg = "bg-emerald-600 text-white"; icon = "fa-circle-check"; }
+      if (type === 'error') { bg = "bg-red-600 text-white"; icon = "fa-circle-xmark"; }
+      if (type === 'warning') { bg = "bg-amber-500 text-gray-900"; icon = "fa-triangle-exclamation"; }
+
+      toast.className = `${bg} px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2.5 text-xs sm:text-sm font-semibold pointer-events-auto toast-enter`;
+      toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i><span>${message}</span>`;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
     }
   </script>
 </body>
