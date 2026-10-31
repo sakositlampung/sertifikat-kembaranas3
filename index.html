@@ -170,13 +170,18 @@
 
         <!-- Search Form -->
         <div class="bg-white/10 backdrop-blur-md p-2 rounded-2xl border border-white/20 shadow-2xl flex flex-col sm:flex-row gap-2">
-          <input type="text" id="publicSearchInput" placeholder="Masukkan 4 Digit No / Nomor Sertifikat Lengkap..." 
+          <input type="text" id="publicSearchInput" placeholder="Masukkan Nama Lengkap, Nomor Sertifikat, atau 4 Digit ID..." 
                  onkeypress="if(event.key==='Enter') searchCertificate()"
                  class="w-full px-4 py-3 rounded-xl bg-white text-gray-800 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
           <button onclick="searchCertificate()" class="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-gray-900 font-bold rounded-xl text-sm transition shadow flex items-center justify-center space-x-2 shrink-0">
             <i class="fa-solid fa-magnifying-glass"></i>
             <span>Cari</span>
           </button>
+        </div>
+
+        <!-- SEARCH RESULTS CONTAINER (UNTUK HASIL MULTIPEL) -->
+        <div id="publicSearchResults" class="hidden w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 shadow-2xl text-left space-y-3">
+          <!-- Dynamically populated by JS -->
         </div>
 
         <!-- Demo Quick Links -->
@@ -761,7 +766,7 @@
   <!-- TOAST CONTAINER -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
-  <!-- JAVASCRIPT LOGIC (PERBAIKAN QR CODE SCAN & PROMISE CANVAS) -->
+  <!-- JAVASCRIPT LOGIC PERBAIKAN -->
   <script>
     // INITIAL DEFAULT SAMPLE DATA
     const DEFAULT_CERTIFICATES = [
@@ -843,6 +848,17 @@
       importPreviewData: []
     };
 
+    // HELPER: NORMALISASI STRING KATEGORI (MENGATASI MASALAH 1)
+    function normalizeCategory(cat) {
+      if (!cat) return 'Peserta';
+      const s = String(cat).trim().toLowerCase();
+      if (s.includes('petugas')) return 'Petugas Upacara';
+      if (s.includes('bin') || s.includes('pembina') || s.includes('pendamping')) return 'Bindamping';
+      if (s.includes('panitia')) return 'Panitia';
+      if (s.includes('peserta')) return 'Peserta';
+      return 'Peserta';
+    }
+
     // ON DOM LOAD INITIALIZATION
     window.addEventListener('DOMContentLoaded', () => {
       loadInitialData();
@@ -869,7 +885,7 @@
       }
     }
 
-    // DYNAMIC VERIFICATION URL FOR QR CODES (Compact payload format)
+    // DYNAMIC VERIFICATION URL FOR QR CODES
     function getVerificationUrl(itemOrCode) {
       const baseUrl = window.location.origin + window.location.pathname;
       if (typeof itemOrCode === 'object' && itemOrCode !== null) {
@@ -892,7 +908,7 @@
       }
     }
 
-    // LOAD INITIAL DATA FROM LOCAL STORAGE
+    // LOAD INITIAL DATA FROM LOCAL STORAGE WITH CATEGORY NORMALIZATION
     function loadInitialData() {
       state.isAdminLoggedIn = localStorage.getItem('kembaranas_admin_session') === 'true';
 
@@ -900,12 +916,15 @@
       if (saved) {
         try { 
           state.certificates = JSON.parse(saved); 
+          state.certificates.forEach(c => {
+            c.category = normalizeCategory(c.category);
+          });
         } 
         catch(e) { 
-          state.certificates = [...DEFAULT_CERTIFICATES]; 
+          state.certificates = DEFAULT_CERTIFICATES.map(c => ({...c, category: normalizeCategory(c.category)})); 
         }
       } else {
-        state.certificates = [...DEFAULT_CERTIFICATES];
+        state.certificates = DEFAULT_CERTIFICATES.map(c => ({...c, category: normalizeCategory(c.category)}));
         saveCertificatesToStorage();
       }
     }
@@ -963,7 +982,6 @@
       }
     }
 
-    // HITUNG NOMOR URUT SERI TERTINGGI DALAM DATABASE
     function getMaxNumCode() {
       if (!state.certificates || state.certificates.length === 0) return 0;
       let max = 0;
@@ -985,17 +1003,18 @@
       if (payloadParam) {
         const decoded = decodePayload(payloadParam);
         if (decoded && decoded.n) {
+          const normCat = normalizeCategory(decoded.c);
           state.activeCert = {
             id: decoded.id || certId || "0000",
             numCode: decoded.id || certId || "0000",
             name: decoded.n,
             school: decoded.s || "-",
-            category: decoded.c || "Peserta",
+            category: normCat,
             certNo: decoded.no || `${decoded.id}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`,
             locationDate: "Bandar Lampung, 31 Oktober 2026",
             sakoOrg: "JSIT Wilayah Lampung",
             signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III",
-            subject: `Sertifikat ${decoded.c || 'Peserta'} Kembaranas III SAKO SIT`
+            subject: `Sertifikat ${normCat} Kembaranas III SAKO SIT`
           };
           switchView('public_verification');
           return;
@@ -1073,32 +1092,122 @@
       }
     }
 
-    function loadCertByCode(code) {
-      if (!code) return;
-      const query = String(code).trim().toLowerCase();
-      
-      const found = state.certificates.find(c => 
-        (c.id && String(c.id).trim().toLowerCase() === query) ||
-        (c.numCode && String(c.numCode).trim().toLowerCase() === query) ||
-        (c.certNo && String(c.certNo).trim().toLowerCase().includes(query))
-      );
-
-      if (found) {
-        state.activeCert = found;
-        switchView('public_verification');
-      } else {
-        showToast(`Sertifikat dengan nomor/ID "${code}" tidak ditemukan!`, "error");
-        switchView('public_search');
-      }
-    }
-
+    // FUNGSI PENCARIAN TERPERBAIKI DENGAN NAMA, NO SERTIFIKAT, ID, KATEGORI & SEKOLAH (MENGATASI MASALAH 2)
     function searchCertificate() {
       const input = document.getElementById('publicSearchInput').value.trim();
       if (!input) {
-        showToast("Masukkan nomor sertifikat atau 4 digit ID terlebih dahulu!", "warning");
+        showToast("Masukkan Nama Lengkap, Nomor Sertifikat, atau ID!", "warning");
         return;
       }
       loadCertByCode(input);
+    }
+
+    function loadCertByCode(query) {
+      if (!query) return;
+      const q = String(query).trim().toLowerCase();
+      
+      const matches = state.certificates.filter(c => {
+        const idMatch = c.id && String(c.id).trim().toLowerCase() === q;
+        const numMatch = c.numCode && (
+          String(c.numCode).trim().toLowerCase() === q || 
+          (!isNaN(parseInt(q, 10)) && parseInt(c.numCode, 10) === parseInt(q, 10))
+        );
+        const certNoMatch = c.certNo && c.certNo.toLowerCase().includes(q);
+        const nameMatch = c.name && c.name.toLowerCase().includes(q);
+        const schoolMatch = c.school && c.school.toLowerCase().includes(q);
+        const catMatch = c.category && c.category.toLowerCase().includes(q);
+        return idMatch || numMatch || certNoMatch || nameMatch || schoolMatch || catMatch;
+      });
+
+      const resultsContainer = document.getElementById('publicSearchResults');
+
+      if (matches.length === 0) {
+        if (resultsContainer) resultsContainer.classList.add('hidden');
+        showToast(`Data sertifikat untuk "${query}" tidak ditemukan!`, "error");
+        switchView('public_search');
+      } else if (matches.length === 1) {
+        if (resultsContainer) resultsContainer.classList.add('hidden');
+        state.activeCert = matches[0];
+        switchView('public_verification');
+        showToast("Sertifikat berhasil ditemukan!", "success");
+      } else {
+        // Cek jika ada kecocokan persis pada nama atau nomor
+        const exactMatch = matches.find(c => 
+          (c.name && c.name.trim().toLowerCase() === q) || 
+          (c.numCode && String(c.numCode).trim().toLowerCase() === q) ||
+          (c.certNo && c.certNo.trim().toLowerCase() === q)
+        );
+        
+        if (exactMatch) {
+          if (resultsContainer) resultsContainer.classList.add('hidden');
+          state.activeCert = exactMatch;
+          switchView('public_verification');
+          showToast("Sertifikat berhasil ditemukan!", "success");
+        } else {
+          renderPublicSearchResults(matches, query);
+        }
+      }
+    }
+
+    // RENDER LIST PILIHAN PESERTA SAAT NAMA DI-SEARCH MULTIPEL
+    function renderPublicSearchResults(matches, query) {
+      const container = document.getElementById('publicSearchResults');
+      if (!container) return;
+      container.classList.remove('hidden');
+
+      let html = `
+        <div class="flex items-center justify-between border-b border-white/20 pb-2 mb-2">
+          <p class="text-xs font-bold text-amber-200">
+            <i class="fa-solid fa-list-check mr-1"></i>
+            Ditemukan <span class="text-white font-extrabold font-mono">${matches.length}</span> sertifikat cocok untuk "<span class="italic text-white">${query}</span>":
+          </p>
+          <button onclick="document.getElementById('publicSearchResults').classList.add('hidden')" class="text-xs text-white/60 hover:text-white">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="max-h-60 overflow-y-auto space-y-2 pr-1">
+      `;
+
+      matches.forEach(item => {
+        let catBadgeClass = "bg-blue-500/20 text-blue-200 border-blue-400/30";
+        if (item.category === 'Bindamping') catBadgeClass = "bg-purple-500/20 text-purple-200 border-purple-400/30";
+        if (item.category === 'Panitia') catBadgeClass = "bg-amber-500/20 text-amber-200 border-amber-400/30";
+        if (item.category === 'Petugas Upacara') catBadgeClass = "bg-emerald-500/20 text-emerald-200 border-emerald-400/30";
+
+        html += `
+          <div onclick="selectCertFromSearchResult('${item.id}')" class="p-3 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl cursor-pointer transition flex items-center justify-between gap-3">
+            <div class="text-left">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="font-bold text-xs sm:text-sm text-white">${item.name}</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded border ${catBadgeClass}">${item.category}</span>
+              </div>
+              <p class="text-[11px] text-white/80 mt-0.5">
+                <i class="fa-solid fa-building-columns mr-1 text-amber-300"></i>${item.school} 
+                <span class="text-white/40 mx-1">|</span> 
+                <span class="font-mono text-amber-200">${item.certNo}</span>
+              </p>
+            </div>
+            <button class="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-gray-900 text-xs font-bold rounded-lg shadow shrink-0 flex items-center space-x-1">
+              <span>Buka</span>
+              <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </button>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      container.innerHTML = html;
+    }
+
+    function selectCertFromSearchResult(id) {
+      const found = state.certificates.find(c => c.id === id);
+      if (found) {
+        state.activeCert = found;
+        const container = document.getElementById('publicSearchResults');
+        if (container) container.classList.add('hidden');
+        switchView('public_verification');
+        showToast("Sertifikat berhasil dimuat!", "success");
+      }
     }
 
     function renderPublicVerificationPage() {
@@ -1245,9 +1354,9 @@
       }
     }
 
-    // DATA FILTERING & RENDER TABLE
+    // DATA FILTERING & RENDER TABLE (TERPERBAIKI PETUGAS UPACARA)
     function setCategoryFilter(cat) {
-      state.activeCategoryFilter = cat;
+      state.activeCategoryFilter = (cat === 'ALL') ? 'ALL' : normalizeCategory(cat);
       state.currentPage = 1;
 
       document.querySelectorAll('.cat-filter-btn').forEach(btn => {
@@ -1594,7 +1703,7 @@
       document.getElementById('formNumCode').value = target.numCode;
       document.getElementById('formName').value = target.name;
       document.getElementById('formSchool').value = target.school;
-      document.getElementById('formCategory').value = target.category;
+      document.getElementById('formCategory').value = normalizeCategory(target.category);
       updateFormPreviewCertNo();
 
       document.getElementById('addEditModal').classList.remove('hidden');
@@ -1606,7 +1715,7 @@
       const numCode = document.getElementById('formNumCode').value.padStart(4, '0');
       const name = document.getElementById('formName').value.trim().toUpperCase();
       const school = document.getElementById('formSchool').value.trim();
-      const category = document.getElementById('formCategory').value;
+      const category = normalizeCategory(document.getElementById('formCategory').value);
       const certNo = `${numCode}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`;
 
       if (editId) {
@@ -1636,7 +1745,7 @@
       renderAdminTable();
     }
 
-    // EXCEL FILE IMPORT PARSER (APPEND MODE AUTO-INCREMENT LOGIC)
+    // EXCEL FILE IMPORT PARSER DENGAN AUTONORMALISASI KATEGORI (MENGATASI MASALAH 1)
     function handleFileUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1664,7 +1773,9 @@
           json.forEach((row, i) => {
             const nameVal = getExcelColumnValue(row, ['Nama Lengkap', 'Nama_Lengkap', 'Nama Peserta', 'NAMA', 'Nama']);
             const schoolVal = getExcelColumnValue(row, ['Asal Sekolah', 'Asal_Sekolah', 'Sekolah', 'INSTANSI', 'Instansi']);
-            const categoryVal = getExcelColumnValue(row, ['Kategori', 'Perihal', 'Jenis']) || defaultCategory;
+            const rawCategory = getExcelColumnValue(row, ['Kategori', 'Perihal', 'Jenis', 'Jabatan', 'Role']) || defaultCategory;
+            const categoryVal = normalizeCategory(rawCategory);
+            
             let excelNumCode = getExcelColumnValue(row, ['No Urut', 'No_Urut', 'ID', 'Nomor']);
 
             let numCodeVal;
@@ -1680,7 +1791,7 @@
                 numCode: numCodeVal,
                 name: String(nameVal).trim().toUpperCase(),
                 school: String(schoolVal).trim() || '-',
-                category: String(categoryVal).trim() || defaultCategory,
+                category: categoryVal,
                 certNo: `${numCodeVal}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`
               });
             }
@@ -1779,17 +1890,19 @@
           }
         }
 
+        const normCat = normalizeCategory(item.category);
+
         const newRecord = {
           id: finalNumCode,
           numCode: finalNumCode,
           name: item.name,
           school: item.school,
-          category: item.category,
+          category: normCat,
           certNo: `${finalNumCode}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`,
           locationDate: "Bandar Lampung, 31 Oktober 2026",
           sakoOrg: "JSIT Wilayah Lampung",
           signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III",
-          subject: `Sertifikat ${item.category} Kembaranas III SAKO SIT`
+          subject: `Sertifikat ${normCat} Kembaranas III SAKO SIT`
         };
 
         const existingIdx = state.certificates.findIndex(c => c.id === finalNumCode);
@@ -1827,7 +1940,7 @@
 
     // CANVAS EDITOR LOGIC
     function onEditorCategoryChange() {
-      const cat = document.getElementById('editorCategorySelect').value;
+      const cat = normalizeCategory(document.getElementById('editorCategorySelect').value);
       document.getElementById('canvasCategoryBadge').innerText = cat;
       
       const layout = state.layouts[cat] || DEFAULT_LAYOUTS[cat];
@@ -1852,7 +1965,7 @@
     }
 
     function onLayoutInputChange() {
-      const cat = document.getElementById('editorCategorySelect').value;
+      const cat = normalizeCategory(document.getElementById('editorCategorySelect').value);
       if (!state.layouts[cat]) state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat] };
 
       state.layouts[cat].posYName = parseInt(document.getElementById('posYName').value);
@@ -1874,7 +1987,7 @@
       const file = e.target.files[0];
       if (!file) return;
 
-      const cat = document.getElementById('editorCategorySelect').value;
+      const cat = normalizeCategory(document.getElementById('editorCategorySelect').value);
       const reader = new FileReader();
 
       reader.onload = function(evt) {
@@ -1923,7 +2036,7 @@
     }
 
     function removeCategoryBgImage() {
-      const cat = document.getElementById('editorCategorySelect').value;
+      const cat = normalizeCategory(document.getElementById('editorCategorySelect').value);
       if (state.layouts[cat]) {
         state.layouts[cat].bgImage = null;
         delete state.loadedBgImages[cat];
@@ -1935,14 +2048,14 @@
     }
 
     function resetCategoryLayout() {
-      const cat = document.getElementById('editorCategorySelect').value;
+      const cat = normalizeCategory(document.getElementById('editorCategorySelect').value);
       state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat], bgImage: state.layouts[cat]?.bgImage || null };
       saveLayoutSettings();
       onEditorCategoryChange();
       showToast(`Layout posisi kategori ${cat} direset ke default`, "info");
     }
 
-    // PROMISE-BASED QR CODE CANVAS GENERATOR (HIGH QUALITY & FAST HP SCANNING)
+    // PROMISE-BASED QR CODE CANVAS GENERATOR
     function generateQRCanvasElement(text, size = 160) {
       return new Promise((resolve) => {
         const tempDiv = document.createElement('div');
@@ -1981,13 +2094,14 @@
       });
     }
 
-    // REAL-TIME CANVAS CERTIFICATE RENDERER (PROMISE ASYNCHRONOUS SAFE)
+    // REAL-TIME CANVAS CERTIFICATE RENDERER
     async function renderCertCanvas(sampleCert = null) {
       const canvas = document.getElementById('certCanvas');
       if (!canvas) return null;
       const ctx = canvas.getContext('2d');
 
-      const category = document.getElementById('editorCategorySelect')?.value || 'Peserta';
+      const rawCat = document.getElementById('editorCategorySelect')?.value || 'Peserta';
+      const category = normalizeCategory(rawCat);
       const layout = state.layouts[category] || DEFAULT_LAYOUTS[category];
 
       const cert = sampleCert || state.certificates.find(c => c.category === category) || {
@@ -2047,25 +2161,23 @@
       ctx.textAlign = "center";
       ctx.fillText(cert.school, canvas.width / 2, layout.posYSchool);
 
-      // Render High Precision QR Code with White Quiet Zone (Margin Putih Pemindai HP)
+      // Render High Precision QR Code with White Quiet Zone
       const shareUrl = getVerificationUrl(cert);
       const qrElement = await generateQRCanvasElement(shareUrl, 140);
 
       if (qrElement) {
         const qrSize = 140;
-        const padding = 12; // ISO standard Quiet Zone
+        const padding = 12;
         const totalSize = qrSize + (padding * 2);
         const boxX = layout.posXQR - padding;
         const boxY = layout.posYQR - padding;
 
-        // Draw White Quiet Zone Background & Border
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(boxX, boxY, totalSize, totalSize);
         ctx.strokeStyle = "#E2E8F0"; 
         ctx.lineWidth = 1.5;
         ctx.strokeRect(boxX, boxY, totalSize, totalSize);
 
-        // Turn off smoothing for crisp QR code pixels
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(qrElement, layout.posXQR, layout.posYQR, qrSize, qrSize);
         ctx.imageSmoothingEnabled = true;
