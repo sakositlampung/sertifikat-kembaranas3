@@ -147,10 +147,17 @@
         <span>Cek Keaslian Sertifikat</span>
       </button>
 
+      <div class="border-t border-white/10 my-2 pt-2">
+        <button id="sidebarAuthBtn" onclick="handleAdminAuthClick(); closeSidebar();" class="w-full text-left px-3 py-2 rounded-lg bg-brand-red/20 text-red-300 hover:bg-brand-red/40 transition flex items-center space-x-2 font-semibold">
+          <i id="sidebarAuthIcon" class="fa-solid fa-lock"></i>
+          <span id="sidebarAuthText">Login Admin</span>
+        </button>
+      </div>
+
     </div>
   </aside>
 
-  <!-- TOP NAVIGATION BAR -->
+  <!-- TOP NAVIGATION BAR (KUSUS HP: HANYA GARIS 3 & LOGO) -->
   <header id="appHeader" class="bg-brand-navy text-white shadow-md sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       
@@ -163,21 +170,21 @@
 
         <!-- Logo & Title -->
         <div class="flex items-center space-x-2.5 cursor-pointer" onclick="switchView('public_search')">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-red to-amber-500 flex items-center justify-center text-white shadow-sm font-bold border border-white/20 shrink-0">
-            <i class="fa-solid fa-tent text-lg"></i>
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-brand-red to-amber-500 flex items-center justify-center text-white shadow-sm font-bold border border-white/20 shrink-0">
+            <i class="fa-solid fa-tent text-base sm:text-lg"></i>
           </div>
           <div>
-            <h1 class="font-bold text-base sm:text-lg leading-tight tracking-wide">KEMBARANAS III</h1>
-            <p class="text-[11px] text-gray-300">SAKO SIT Indonesia</p>
+            <h1 class="font-bold text-sm sm:text-lg leading-tight tracking-wide">KEMBARANAS III</h1>
+            <p class="text-[10px] sm:text-[11px] text-gray-300">SAKO SIT Indonesia</p>
           </div>
         </div>
       </div>
 
-      <!-- Right Action Buttons -->
-      <div id="navRightButtons" class="flex items-center space-x-2 sm:space-x-3">
+      <!-- Right Action Buttons (DISEMBUNYIKAN PADA HP, HANYA TAMPIL DI DESKTOP/SM+) -->
+      <div id="navRightButtons" class="hidden sm:flex items-center space-x-2 sm:space-x-3">
         <button onclick="switchView('public_search')" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs sm:text-sm font-medium transition flex items-center space-x-1.5">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <span class="hidden sm:inline">Cek Sertifikat</span>
+          <span>Cek Sertifikat</span>
         </button>
 
         <button id="btnAdminAuth" onclick="handleAdminAuthClick()" class="px-3 py-1.5 rounded-lg bg-brand-red hover:bg-brand-darkred text-white text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 shadow">
@@ -227,13 +234,13 @@
     </section>
 
     <!-- VIEW 2: PUBLIC SEARCH PAGE -->
-    <section id="viewPublicSearch" class="flex-grow bg-gradient-to-b from-[#fa4622] via-[#f03212] to-[#d82103] py-12 px-4 flex flex-col items-center justify-center text-white">
+    <section id="viewPublicSearch" class="flex-grow bg-gradient-to-b from-[#fa4622] via-[#f03212] to-[#d82103] py-8 sm:py-12 px-4 flex flex-col items-center justify-center text-white">
       <div class="max-w-xl w-full text-center space-y-6">
-        <div class="w-20 h-20 bg-white rounded-full mx-auto flex items-center justify-center text-brand-red text-3xl shadow-xl">
+        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full mx-auto flex items-center justify-center text-brand-red text-2xl sm:text-3xl shadow-xl">
           <i class="fa-solid fa-certificate"></i>
         </div>
         <div>
-          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-wide uppercase">Cek Keaslian Sertifikat</h2>
+          <h2 class="text-xl sm:text-3xl font-extrabold tracking-wide uppercase">Cek Keaslian Sertifikat</h2>
           <p class="text-white/80 text-xs sm:text-sm mt-1">Perkemahan Ukhuwah Nasional (KEMBARANAS) III SAKO SIT</p>
         </div>
 
@@ -275,16 +282,18 @@
 
     <!-- VIEW 3: ADMIN DASHBOARD -->
     <section id="viewAdminDashboard" class="hidden flex-grow bg-gray-50 flex flex-col">
+      <!-- SUB-HEADER ADMIN (DISEMBUNYIKAN DI HP AGAR LEBIH BERSIH) -->
       <div class="bg-white border-b border-gray-200 sticky top-16 z-30 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between py-2 gap-3">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between py-2.5">
           <div class="flex items-center space-x-2">
             <span class="px-2.5 py-1 bg-brand-red/10 text-brand-red rounded-md text-xs font-bold uppercase tracking-wider">
               <i class="fa-solid fa-shield-halved mr-1"></i> Admin Panel
             </span>
-            <span class="text-xs text-gray-500 hidden sm:inline">| Sertifikat Kembaranas III</span>
+            <span class="text-xs text-gray-500">| Sertifikat Kembaranas III</span>
           </div>
 
-          <div class="flex items-center space-x-1 sm:space-x-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+          <!-- TAB HORIZONAL HANYA TAMPIL DI DESKTOP/SM+ -->
+          <div class="hidden sm:flex items-center space-x-2">
             <button onclick="switchAdminTab('data')" id="tabBtnData" class="admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white">
               <i class="fa-solid fa-table-list"></i>
               <span>Data Sertifikat</span>
@@ -499,9 +508,11 @@
           </div>
         </div>
 
-        <!-- TAB 3: CANVAS EDITOR (DENGAN RESPONSIVE PREVIEW MOBILE) -->
+        <!-- TAB 3: CANVAS EDITOR (OPTIMASI PREVIEW CANVAS HP/DESKTOP) -->
         <div id="adminTabTemplate" class="hidden space-y-6">
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- CONTROLLER LAYOUT SIDEBAR -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4 lg:col-span-1 max-h-[85vh] overflow-y-auto">
               <div class="border-b border-gray-200 pb-3 flex items-center justify-between">
                 <h3 class="text-sm font-bold text-gray-900">Pengaturan Layout Canvas</h3>
@@ -633,20 +644,26 @@
               </div>
             </div>
 
-            <!-- CANVAS RENDER BOX (AUTO SCALING UNTUK MOBILE/HP) -->
-            <div class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-gray-200 lg:col-span-2 flex flex-col items-center justify-center w-full overflow-hidden">
+            <!-- PREVIEW SERTIFIKAT CANVAS (SOLUSI ULTRA RESPONSIF HP & DESKTOP) -->
+            <div class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-gray-200 lg:col-span-2 flex flex-col items-center justify-start w-full">
               <div class="flex items-center justify-between w-full mb-3">
-                <span class="text-xs font-bold text-gray-700">Preview Sertifikat Real-Time (Canvas 1200x850 px)</span>
-                <span class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-semibold sm:hidden">
-                  <i class="fa-solid fa-mobile-screen mr-1"></i> Mode HP Active
+                <span class="text-xs font-bold text-gray-800 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-eye text-brand-red"></i>
+                  <span>Preview Sertifikat Real-Time (1200x850 px)</span>
+                </span>
+                <span class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-semibold">
+                  <i class="fa-solid fa-expand mr-1"></i> Auto Scale
                 </span>
               </div>
               
-              <!-- Responsive Wrapper -->
-              <div class="w-full overflow-x-auto rounded-lg border border-gray-300 shadow-md bg-gray-100 flex justify-center items-center p-1.5 sm:p-2 min-h-[220px]">
-                <canvas id="certCanvas" width="1200" height="850" class="w-full max-w-full h-auto block rounded bg-white shadow-sm"></canvas>
+              <!-- Responsive Aspect Ratio Container untuk menjamin Canvas tampil di layar HP -->
+              <div class="w-full bg-gray-100 rounded-lg border border-gray-300 p-2 shadow-inner flex items-center justify-center overflow-hidden min-h-[220px]">
+                <div class="relative w-full aspect-[1200/850] max-w-[1200px] flex items-center justify-center bg-white rounded shadow">
+                  <canvas id="certCanvas" width="1200" height="850" class="w-full h-full object-contain block rounded"></canvas>
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -691,7 +708,7 @@
 
   <!-- MODAL ADD/EDIT -->
   <div id="addEditModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-6 space-y-4 relative modal-scale-up">
+    <div class="bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-6 space-y-4 relative modal-scale-up">
       <button onclick="closeAddEditModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
         <i class="fa-solid fa-xmark"></i>
       </button>
@@ -899,6 +916,12 @@
       checkURLParameters();
     });
 
+    window.addEventListener('resize', () => {
+      if (state.adminTab === 'template' && state.currentView === 'admin') {
+        renderCertCanvas();
+      }
+    });
+
     function encodePayload(obj) {
       try {
         return encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(obj)))));
@@ -1087,12 +1110,19 @@
     function updateAuthButtonUI() {
       const btnIcon = document.getElementById('btnAdminIcon');
       const btnText = document.getElementById('btnAdminText');
+      const sideIcon = document.getElementById('sidebarAuthIcon');
+      const sideText = document.getElementById('sidebarAuthText');
+
       if (state.isAdminLoggedIn) {
-        btnIcon.className = "fa-solid fa-right-from-bracket";
-        btnText.innerText = "Logout Admin";
+        if (btnIcon) btnIcon.className = "fa-solid fa-right-from-bracket";
+        if (btnText) btnText.innerText = "Logout Admin";
+        if (sideIcon) sideIcon.className = "fa-solid fa-right-from-bracket text-red-400";
+        if (sideText) sideText.innerText = "Logout Admin";
       } else {
-        btnIcon.className = "fa-solid fa-lock";
-        btnText.innerText = "Login Admin";
+        if (btnIcon) btnIcon.className = "fa-solid fa-lock";
+        if (btnText) btnText.innerText = "Login Admin";
+        if (sideIcon) sideIcon.className = "fa-solid fa-lock text-emerald-400";
+        if (sideText) sideText.innerText = "Login Admin";
       }
     }
 
@@ -1352,16 +1382,22 @@
 
       if (tabName === 'data') {
         document.getElementById('adminTabData').classList.remove('hidden');
-        document.getElementById('tabBtnData').className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white shadow-sm";
+        if (document.getElementById('tabBtnData')) {
+          document.getElementById('tabBtnData').className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white shadow-sm";
+        }
         renderAdminTable();
       } else if (tabName === 'import') {
         document.getElementById('adminTabImport').classList.remove('hidden');
-        document.getElementById('tabBtnImport').className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white shadow-sm";
+        if (document.getElementById('tabBtnImport')) {
+          document.getElementById('tabBtnImport').className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white shadow-sm";
+        }
       } else if (tabName === 'template') {
         document.getElementById('adminTabTemplate').classList.remove('hidden');
-        document.getElementById('tabBtnTemplate').className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white shadow-sm";
+        if (document.getElementById('tabBtnTemplate')) {
+          document.getElementById('tabBtnTemplate').className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white shadow-sm";
+        }
         onEditorCategoryChange();
-        setTimeout(() => { renderCertCanvas(); }, 150);
+        setTimeout(() => { renderCertCanvas(); }, 100);
       }
     }
 
@@ -1378,7 +1414,9 @@
                           cat === 'Bindamping' ? 'filterBindamping' :
                           cat === 'Panitia' ? 'filterPanitia' : 'filterPetugas';
 
-      document.getElementById(activeBtnId).className = "cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-navy text-white shadow-sm shrink-0";
+      if (document.getElementById(activeBtnId)) {
+        document.getElementById(activeBtnId).className = "cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-navy text-white shadow-sm shrink-0";
+      }
       renderAdminTable();
     }
 
