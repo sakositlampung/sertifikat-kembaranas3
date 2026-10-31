@@ -17,8 +17,12 @@
   <!-- SheetJS (Excel Parser & Generator) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   
-  <!-- QRCode.js (Library Pembuat QR Code Client-Side) -->
+  <!-- QRCode.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- Firebase App & Firestore SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
   <script>
     tailwind.config = {
@@ -43,34 +47,17 @@
   </script>
 
   <style>
-    /* Custom Scrollbar Styling */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #f1f5f9;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     
-    /* Animation Transitions */
-    .toast-enter {
-      animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
+    .toast-enter { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     @keyframes slideInRight {
       from { transform: translateX(100%); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
     }
-
-    .modal-scale-up {
-      animation: modalScale 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
+    .modal-scale-up { animation: modalScale 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     @keyframes modalScale {
       from { transform: scale(0.92); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
@@ -82,7 +69,6 @@
   <!-- TOP NAVIGATION BAR -->
   <header id="appHeader" class="bg-brand-navy text-white shadow-md sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <!-- Logo & Title -->
       <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('public_search')">
         <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-red to-amber-500 flex items-center justify-center text-white shadow-sm font-bold border border-white/20">
           <i class="fa-solid fa-tent text-lg"></i>
@@ -93,15 +79,12 @@
         </div>
       </div>
 
-      <!-- Action Buttons -->
       <div id="navRightButtons" class="flex items-center space-x-2 sm:space-x-3">
-        <!-- Quick Search -->
         <button onclick="switchView('public_search')" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs sm:text-sm font-medium transition flex items-center space-x-1.5">
           <i class="fa-solid fa-magnifying-glass"></i>
           <span class="hidden sm:inline">Cek Sertifikat</span>
         </button>
 
-        <!-- Admin Auth Button -->
         <button id="btnAdminAuth" onclick="handleAdminAuthClick()" class="px-3 py-1.5 rounded-lg bg-brand-red hover:bg-brand-darkred text-white text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 shadow">
           <i id="btnAdminIcon" class="fa-solid fa-lock"></i>
           <span id="btnAdminText">Login Admin</span>
@@ -115,8 +98,6 @@
 
     <!-- VIEW 1: PUBLIC VERIFICATION PAGE -->
     <section id="viewPublicVerification" class="hidden flex-grow bg-gradient-to-b from-[#fa4622] via-[#f03212] to-[#d82103] py-10 px-4 flex flex-col items-center justify-center">
-      
-      <!-- Logo Emblem Top -->
       <div class="mb-6 text-center">
         <div class="w-24 h-24 sm:w-28 sm:h-28 bg-white rounded-full mx-auto flex items-center justify-center p-2 shadow-xl border-4 border-white/30">
           <div class="w-full h-full rounded-full bg-gradient-to-tr from-amber-500 via-brand-red to-red-700 flex flex-col items-center justify-center text-white text-center p-1 border border-amber-300">
@@ -130,20 +111,14 @@
         </h2>
       </div>
 
-      <!-- Verified Information Card -->
       <div class="w-full max-w-lg bg-white rounded-xl shadow-2xl overflow-hidden border border-white/50 transition-all duration-300">
-        <div class="p-6 sm:p-8 space-y-4 text-gray-800" id="publicCertCardContent">
-          <!-- Dynamically populated by JS -->
-        </div>
-
-        <!-- Verification Footer -->
+        <div class="p-6 sm:p-8 space-y-4 text-gray-800" id="publicCertCardContent"></div>
         <div class="bg-emerald-50 border-t border-emerald-100 p-4 text-center flex items-center justify-center space-x-2 text-emerald-800 text-xs sm:text-sm font-semibold">
           <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
           <span>Sertifikat Terverifikasi Resmi Sistem SAKO SIT</span>
         </div>
       </div>
 
-      <!-- Public Action Footer -->
       <div class="mt-6 flex flex-wrap justify-center gap-3">
         <button onclick="downloadActivePublicCert()" class="px-4 py-2 bg-white text-brand-darkred hover:bg-gray-100 rounded-lg text-xs sm:text-sm font-bold shadow transition flex items-center space-x-2">
           <i class="fa-solid fa-download"></i>
@@ -154,7 +129,6 @@
           <span>Salin Tautan Verifikasi</span>
         </button>
       </div>
-
     </section>
 
     <!-- VIEW 2: PUBLIC SEARCH PAGE -->
@@ -168,7 +142,6 @@
           <p class="text-white/80 text-xs sm:text-sm mt-1">Perkemahan Ukhuwah Nasional (KEMBARANAS) III SAKO SIT</p>
         </div>
 
-        <!-- Search Form -->
         <div class="bg-white/10 backdrop-blur-md p-2 rounded-2xl border border-white/20 shadow-2xl flex flex-col sm:flex-row gap-2">
           <input type="text" id="publicSearchInput" placeholder="Masukkan Nama Lengkap, Nomor Sertifikat, atau 4 Digit ID..." 
                  onkeypress="if(event.key==='Enter') searchCertificate()"
@@ -179,12 +152,8 @@
           </button>
         </div>
 
-        <!-- SEARCH RESULTS CONTAINER (UNTUK HASIL MULTIPEL) -->
-        <div id="publicSearchResults" class="hidden w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 shadow-2xl text-left space-y-3">
-          <!-- Dynamically populated by JS -->
-        </div>
+        <div id="publicSearchResults" class="hidden w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 shadow-2xl text-left space-y-3"></div>
 
-        <!-- Demo Quick Links -->
         <div class="bg-white/10 rounded-xl p-4 border border-white/15 text-left text-xs space-y-2">
           <p class="font-bold text-amber-200">💡 Sampel Data Sertifikat Kembaranas III:</p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-white/90">
@@ -211,7 +180,6 @@
 
     <!-- VIEW 3: ADMIN DASHBOARD -->
     <section id="viewAdminDashboard" class="hidden flex-grow bg-gray-50 flex flex-col">
-      <!-- Admin Navigation Sub-Header -->
       <div class="bg-white border-b border-gray-200 sticky top-16 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between py-2 gap-3">
           <div class="flex items-center space-x-2">
@@ -221,7 +189,6 @@
             <span class="text-xs text-gray-500 hidden sm:inline">| Sertifikat Kembaranas III</span>
           </div>
 
-          <!-- Admin Tabs -->
           <div class="flex items-center space-x-1 sm:space-x-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
             <button onclick="switchAdminTab('data')" id="tabBtnData" class="admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white">
               <i class="fa-solid fa-table-list"></i>
@@ -235,31 +202,21 @@
               <i class="fa-solid fa-pen-ruler"></i>
               <span>Canvas Editor</span>
             </button>
-            <button onclick="switchAdminTab('guide')" id="tabBtnGuide" class="admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 transition flex items-center space-x-1.5">
-              <i class="fa-solid fa-cloud-arrow-up"></i>
-              <span>GitHub & Firebase</span>
-            </button>
           </div>
         </div>
       </div>
 
-      <!-- ADMIN CONTAINER CONTENT -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-4">
-
         <!-- TAB 1: DATA SERTIFIKAT -->
         <div id="adminTabData" class="space-y-4">
-          
-          <!-- Filters & Actions Bar -->
           <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-3">
             <div class="flex flex-col md:flex-row gap-3 items-center justify-between">
-              <!-- Search Box -->
               <div class="relative w-full md:w-80">
                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                 <input type="text" id="adminSearchInput" oninput="onSearchChange()" placeholder="Cari Nama, Sekolah, No Sertifikat..."
                        class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-red">
               </div>
 
-              <!-- Category Buttons -->
               <div class="flex items-center space-x-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
                 <button onclick="setCategoryFilter('ALL')" id="filterAll" class="cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-navy text-white shadow-sm shrink-0">
                   Semua (<span id="countAll">0</span>)
@@ -278,7 +235,6 @@
                 </button>
               </div>
 
-              <!-- Buttons -->
               <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
                 <button onclick="exportDataToExcel()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition flex items-center space-x-1.5 shadow-sm">
                   <i class="fa-solid fa-file-export"></i>
@@ -291,7 +247,6 @@
               </div>
             </div>
 
-            <!-- BULK ACTION BAR -->
             <div id="bulkActionBar" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-lg flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center space-x-2 text-amber-900 text-xs font-bold">
                 <i class="fa-solid fa-list-check text-amber-600 text-base"></i>
@@ -313,10 +268,7 @@
             </div>
           </div>
 
-          <!-- Table Container -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            
-            <!-- TOP PAGINATION BAR CONTROL -->
             <div class="p-3.5 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-600">
               <div class="flex items-center space-x-3">
                 <span class="flex items-center space-x-1.5">
@@ -333,20 +285,15 @@
                 <span>Menampilkan <strong id="pageRangeText" class="text-gray-900 font-extrabold">0 - 0</strong> dari <strong id="totalRecordsText" class="text-gray-900 font-extrabold">0</strong> data</span>
               </div>
 
-              <!-- Page Number Navigation Buttons -->
-              <div id="paginationControls" class="flex items-center space-x-1">
-                <!-- Dynamically rendered by JS -->
-              </div>
+              <div id="paginationControls" class="flex items-center space-x-1"></div>
             </div>
 
-            <!-- TABLE CONTENT -->
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs sm:text-sm">
                 <thead class="bg-gray-100 border-b border-gray-200 text-gray-600 uppercase font-semibold text-[11px] tracking-wider">
                   <tr>
                     <th class="py-3.5 px-3 text-center w-10">
-                      <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" 
-                             class="rounded border-gray-300 text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer">
+                      <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="rounded border-gray-300 text-brand-red focus:ring-brand-red w-4 h-4 cursor-pointer">
                     </th>
                     <th class="py-3.5 px-3 w-12 text-center">No</th>
                     <th class="py-3.5 px-4">Nomor Sertifikat</th>
@@ -357,14 +304,10 @@
                     <th class="py-3.5 px-4 text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody id="adminDataTableBody" class="divide-y divide-gray-200 text-gray-700">
-                  <!-- JS Dynamic Rows -->
-                </tbody>
+                <tbody id="adminDataTableBody" class="divide-y divide-gray-200 text-gray-700"></tbody>
               </table>
             </div>
-
           </div>
-
         </div>
 
         <!-- TAB 2: EXCEL IMPORT -->
@@ -376,7 +319,7 @@
                   <i class="fa-solid fa-file-excel text-emerald-600 text-xl"></i>
                   <span>Import Data dari File Excel (.xlsx / .csv)</span>
                 </h3>
-                <p class="text-xs text-gray-500 mt-0.5">Unggah file Excel untuk secara otomatis membuat nomor sertifikat unik dan QR Code.</p>
+                <p class="text-xs text-gray-500 mt-0.5">Unggah file Excel untuk disimpan otomatis ke Cloud Firestore Server.</p>
               </div>
 
               <button onclick="downloadExcelTemplate()" class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 text-xs font-bold rounded-lg transition flex items-center space-x-1.5">
@@ -385,7 +328,6 @@
               </button>
             </div>
 
-            <!-- Upload Zone -->
             <div class="border-2 border-dashed border-gray-300 hover:border-brand-red rounded-xl p-8 text-center bg-gray-50 hover:bg-red-50/30 transition cursor-pointer" onclick="document.getElementById('excelFileInput').click()">
               <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
               <div class="space-y-2">
@@ -397,14 +339,13 @@
               </div>
             </div>
 
-            <!-- Opsi Import Mode & Default Category -->
             <div class="bg-amber-50/60 p-4 rounded-xl border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
               <div class="space-y-0.5">
                 <span class="font-bold text-gray-800 flex items-center space-x-1.5">
                   <i class="fa-solid fa-sliders text-brand-red"></i>
                   <span>Mode Import Data:</span>
                 </span>
-                <p class="text-gray-500 text-[11px]">Mode Append akan melanjutkan nomor urut dari data terakhir tanpa menghapus peserta yang ada.</p>
+                <p class="text-gray-500 text-[11px]">Mode Append akan melanjutkan nomor urut dari data terakhir tanpa menghapus data yang ada.</p>
               </div>
               
               <div class="flex flex-wrap items-center gap-3">
@@ -432,7 +373,6 @@
               </div>
             </div>
 
-            <!-- Preview Data Excel -->
             <div id="importPreviewContainer" class="hidden space-y-4 pt-4 border-t border-gray-200">
               <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <div class="flex items-center space-x-2">
@@ -440,8 +380,8 @@
                   <div id="importModeInfoBadge"></div>
                 </div>
                 <button onclick="processBatchImport()" class="px-4 py-2 bg-brand-red hover:bg-brand-darkred text-white text-xs font-bold rounded-lg shadow transition flex items-center space-x-2">
-                  <i class="fa-solid fa-check"></i>
-                  <span>Proses & Simpan Ke Database</span>
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                  <span>Proses & Upload ke Firebase</span>
                 </button>
               </div>
 
@@ -457,13 +397,10 @@
                       <th class="p-2 border-b">No Sertifikat Hasil</th>
                     </tr>
                   </thead>
-                  <tbody id="importPreviewTableBody" class="divide-y divide-gray-200">
-                    <!-- Dynamic preview rows -->
-                  </tbody>
+                  <tbody id="importPreviewTableBody" class="divide-y divide-gray-200"></tbody>
                 </table>
               </div>
             </div>
-
           </div>
         </div>
 
@@ -487,9 +424,8 @@
               </div>
 
               <div>
-                <label class="block text-xs font-semibold text-gray-700 mb-1">Upload Background Custom (Auto Compress JPEG):</label>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Upload Background Custom:</label>
                 <input type="file" id="bgImageUpload" accept="image/*" onchange="handleBgImageUpload(event)" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-brand-red/10 file:text-brand-red">
-                <p class="text-[10px] text-gray-400 mt-1">Sistem otomatis mengompresi gambar ke format JPEG ~500KB agar aman tersimpan permanen di LocalStorage.</p>
               </div>
 
               <div id="bgRemoveContainer" class="hidden">
@@ -502,7 +438,6 @@
               <hr class="border-gray-200">
 
               <div class="space-y-3 text-xs">
-                <!-- 1. KONTROL NAMA -->
                 <p class="font-bold text-gray-800 flex items-center space-x-1">
                   <i class="fa-solid fa-user text-brand-red"></i>
                   <span>Posisi & Ukuran Nama Lengkap:</span>
@@ -518,7 +453,6 @@
                   </div>
                 </div>
 
-                <!-- 2. KONTROL SEKOLAH -->
                 <p class="font-bold text-gray-800 pt-2 flex items-center space-x-1">
                   <i class="fa-solid fa-school text-brand-red"></i>
                   <span>Posisi & Ukuran Asal Sekolah:</span>
@@ -534,7 +468,6 @@
                   </div>
                 </div>
 
-                <!-- 3. KONTROL NOMOR SERTIFIKAT LENGKAP -->
                 <div class="pt-2 border-t border-gray-100">
                   <div class="flex items-center justify-between mb-1.5">
                     <p class="font-bold text-gray-800 flex items-center space-x-1">
@@ -571,7 +504,6 @@
                   </div>
                 </div>
 
-                <!-- 4. KONTROL QR CODE -->
                 <p class="font-bold text-gray-800 pt-2 flex items-center space-x-1">
                   <i class="fa-solid fa-qrcode text-brand-red"></i>
                   <span>Posisi QR Code Barcode:</span>
@@ -591,7 +523,7 @@
               <div class="pt-2 flex flex-col gap-2">
                 <button onclick="saveCurrentLayoutExplicitly()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-2 shadow">
                   <i class="fa-solid fa-floppy-disk"></i>
-                  <span>Simpan Pengaturan Layout & Template</span>
+                  <span>Simpan Pengaturan Layout</span>
                 </button>
 
                 <div class="flex gap-2">
@@ -606,7 +538,6 @@
               </div>
             </div>
 
-            <!-- Canvas Render Box -->
             <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 lg:col-span-2 flex flex-col items-center justify-center">
               <span class="text-xs font-bold text-gray-700 mb-3 w-full text-left">Preview Sertifikat Real-Time (Canvas 1200x850 px)</span>
               <div class="w-full overflow-hidden rounded-lg border border-gray-300 shadow-md bg-gray-100 flex justify-center items-center p-2">
@@ -615,49 +546,15 @@
             </div>
           </div>
         </div>
-
-        <!-- TAB 4: DEPLOYMENT GUIDE -->
-        <div id="adminTabGuide" class="hidden space-y-6">
-          <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
-            <h3 class="text-lg font-bold text-gray-900 flex items-center space-x-2">
-              <i class="fa-solid fa-cloud-arrow-up text-brand-red"></i>
-              <span>Panduan Hosting GitHub Pages & Database Firebase</span>
-            </h3>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs leading-relaxed">
-              <div class="border p-4 rounded-xl bg-gray-50 space-y-2">
-                <p class="font-bold text-sm text-gray-900"><i class="fa-brands fa-github mr-1"></i> GitHub Pages:</p>
-                <ol class="list-decimal list-inside space-y-1 text-gray-700">
-                  <li>Buat repository baru bernama <code class="bg-gray-200 px-1 rounded">sertifikat-kembaranas</code>.</li>
-                  <li>Simpan kode file ini sebagai <code class="bg-gray-200 px-1 rounded font-bold">index.html</code>.</li>
-                  <li>Upload file ke repository, lalu masuk ke <strong>Settings &gt; Pages</strong>.</li>
-                  <li>Pilih Branch <strong>main</strong> lalu klik <strong>Save</strong>.</li>
-                </ol>
-              </div>
-
-              <div class="border p-4 rounded-xl bg-amber-50/50 space-y-2">
-                <p class="font-bold text-sm text-amber-900"><i class="fa-solid fa-fire mr-1 text-amber-600"></i> Firebase Firestore:</p>
-                <ol class="list-decimal list-inside space-y-1 text-amber-900">
-                  <li>Buka Firebase Console &rarr; buat Cloud Firestore.</li>
-                  <li>Sistem otomatis menyimpan data sertifikat pada path: <code class="font-mono bg-white px-1 border rounded">/certificates/{id}</code>.</li>
-                  <li>Mendukung verifikasi langsung saat QR Code di-scan dari HP peserta.</li>
-                </ol>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </div>
     </section>
-
   </main>
 
-  <!-- FOOTER -->
   <footer class="bg-white border-t border-gray-200 py-4 text-center text-xs text-gray-500">
     <p>© 2026 Perkemahan Ukhuwah Nasional (KEMBARANAS) III - SAKO SIT Indonesia</p>
   </footer>
 
-  <!-- MODAL 1: ADMIN LOGIN MODAL -->
+  <!-- MODAL ADMIN LOGIN -->
   <div id="loginModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-5 relative border border-gray-100 modal-scale-up">
       <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg">
@@ -689,7 +586,7 @@
     </div>
   </div>
 
-  <!-- MODAL 2: ADD / EDIT CERTIFICATE MODAL -->
+  <!-- MODAL ADD/EDIT -->
   <div id="addEditModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-6 space-y-4 relative modal-scale-up">
       <button onclick="closeAddEditModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
@@ -740,7 +637,7 @@
     </div>
   </div>
 
-  <!-- MODAL 3: CUSTOM CONFIRMATION MODAL -->
+  <!-- MODAL CONFIRMATION -->
   <div id="customConfirmModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center space-y-4 modal-scale-up">
       <div id="confirmModalIconContainer" class="w-14 h-14 rounded-full mx-auto flex items-center justify-center text-2xl bg-red-100 text-red-600">
@@ -763,64 +660,32 @@
     </div>
   </div>
 
-  <!-- TOAST CONTAINER -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
-  <!-- JAVASCRIPT LOGIC PERBAIKAN -->
+  <!-- JAVASCRIPT & FIREBASE INTEGRATION LOGIC -->
   <script>
-    // INITIAL DEFAULT SAMPLE DATA
+    // 1. FIREBASE CONFIGURATION (DARI RESULT SKRINSHOOT)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBbQIN4Eq8crgq06JPmedey29qz0bhd05w",
+      authDomain: "sertifikat-kembaranas3.firebaseapp.com",
+      projectId: "sertifikat-kembaranas3",
+      storageBucket: "sertifikat-kembaranas3.firebasestorage.app",
+      messagingSenderId: "157029655088",
+      appId: "1:157029655088:web:7fe2eca37332373f4103f5",
+      measurementId: "G-WQG10GSSBZ"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // DEFAULT DATA APABILA SERVER KOSONG
     const DEFAULT_CERTIFICATES = [
-      { 
-        id: "0001", 
-        numCode: "0001", 
-        name: "FAEYZA KENZIE GIAR PRAMIYADI", 
-        school: "SMAIT Ummul Quro Bogor", 
-        category: "Peserta", 
-        certNo: "0001-0247/KEMBARANAS-III/SAKO-SIT/X/2026", 
-        locationDate: "Bandar Lampung, 31 Oktober 2026", 
-        sakoOrg: "JSIT Wilayah Lampung", 
-        signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III", 
-        subject: "Sertifikat Peserta Perkemahan Ukhuwah Nasional (KEMBARANAS) III SAKO SIT" 
-      },
-      { 
-        id: "0002", 
-        numCode: "0002", 
-        name: "Ustadz Ahmad Fauzi, S.Pd.", 
-        school: "SMPIT Al-Kautsar", 
-        category: "Bindamping", 
-        certNo: "0002-0247/KEMBARANAS-III/SAKO-SIT/X/2026", 
-        locationDate: "Bandar Lampung, 31 Oktober 2026", 
-        sakoOrg: "JSIT Wilayah Lampung", 
-        signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III", 
-        subject: "Sertifikat Pembina Pendamping (Bindamping) Kembaranas III" 
-      },
-      { 
-        id: "0003", 
-        numCode: "0003", 
-        name: "Siti Nurhaliza, S.T.", 
-        school: "Pinsako SIT Wilayah Lampung", 
-        category: "Panitia", 
-        certNo: "0003-0247/KEMBARANAS-III/SAKO-SIT/X/2026", 
-        locationDate: "Bandar Lampung, 31 Oktober 2026", 
-        sakoOrg: "JSIT Wilayah Lampung", 
-        signatory: "Ketua Pinsakonas SAKO SIT", 
-        subject: "Sertifikat Panitia Penyelenggara Kembaranas III SAKO SIT" 
-      },
-      { 
-        id: "0004", 
-        numCode: "0004", 
-        name: "Muhammad Rizky Pratama", 
-        school: "SMAIT Luqman Al-Hakim", 
-        category: "Petugas Upacara", 
-        certNo: "0004-0247/KEMBARANAS-III/SAKO-SIT/X/2026", 
-        locationDate: "Bandar Lampung, 31 Oktober 2026", 
-        sakoOrg: "JSIT Wilayah Lampung", 
-        signatory: "Ketua Panitia Kembaranas III", 
-        subject: "Sertifikat Petugas Upacara Kembaranas III SAKO SIT" 
-      }
+      { id: "0001", numCode: "0001", name: "FAEYZA KENZIE GIAR PRAMIYADI", school: "SMAIT Ummul Quro Bogor", category: "Peserta", certNo: "0001-0247/KEMBARANAS-III/SAKO-SIT/X/2026", locationDate: "Bandar Lampung, 31 Oktober 2026", sakoOrg: "JSIT Wilayah Lampung", signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III", subject: "Sertifikat Peserta Perkemahan Ukhuwah Nasional (KEMBARANAS) III SAKO SIT" },
+      { id: "0002", numCode: "0002", name: "Ustadz Ahmad Fauzi, S.Pd.", school: "SMPIT Al-Kautsar", category: "Bindamping", certNo: "0002-0247/KEMBARANAS-III/SAKO-SIT/X/2026", locationDate: "Bandar Lampung, 31 Oktober 2026", sakoOrg: "JSIT Wilayah Lampung", signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III", subject: "Sertifikat Pembina Pendamping (Bindamping) Kembaranas III" },
+      { id: "0003", numCode: "0003", name: "Siti Nurhaliza, S.T.", school: "Pinsako SIT Wilayah Lampung", category: "Panitia", certNo: "0003-0247/KEMBARANAS-III/SAKO-SIT/X/2026", locationDate: "Bandar Lampung, 31 Oktober 2026", sakoOrg: "JSIT Wilayah Lampung", signatory: "Ketua Pinsakonas SAKO SIT", subject: "Sertifikat Panitia Penyelenggara Kembaranas III SAKO SIT" },
+      { id: "0004", numCode: "0004", name: "Muhammad Rizky Pratama", school: "SMAIT Luqman Al-Hakim", category: "Petugas Upacara", certNo: "0004-0247/KEMBARANAS-III/SAKO-SIT/X/2026", locationDate: "Bandar Lampung, 31 Oktober 2026", sakoOrg: "JSIT Wilayah Lampung", signatory: "Ketua Panitia Kembaranas III", subject: "Sertifikat Petugas Upacara Kembaranas III SAKO SIT" }
     ];
 
-    // DEFAULT LAYOUT CONFIG PER CATEGORY
     const DEFAULT_LAYOUTS = {
       'Peserta': { posYName: 380, fontSizeName: 42, posYSchool: 450, fontSizeSchool: 24, showCertNo: true, posXCertNo: 600, posYCertNo: 330, fontSizeCertNo: 18, colorCertNo: '#334155', posXQR: 950, posYQR: 650, bgImage: null },
       'Bindamping': { posYName: 380, fontSizeName: 42, posYSchool: 450, fontSizeSchool: 24, showCertNo: true, posXCertNo: 600, posYCertNo: 330, fontSizeCertNo: 18, colorCertNo: '#334155', posXQR: 950, posYQR: 650, bgImage: null },
@@ -828,7 +693,6 @@
       'Petugas Upacara': { posYName: 380, fontSizeName: 42, posYSchool: 450, fontSizeSchool: 24, showCertNo: true, posXCertNo: 600, posYCertNo: 330, fontSizeCertNo: 18, colorCertNo: '#334155', posXQR: 950, posYQR: 650, bgImage: null }
     };
 
-    // APPLICATION STATE
     let state = {
       certificates: [],
       layouts: {},
@@ -838,17 +702,13 @@
       adminTab: 'data',
       activeCategoryFilter: 'ALL',
       activeCert: null,
-      
       currentPage: 1,
       pageSize: 10,
-
       selectedIds: new Set(),
       confirmCallback: null,
-
       importPreviewData: []
     };
 
-    // HELPER: NORMALISASI STRING KATEGORI (MENGATASI MASALAH 1)
     function normalizeCategory(cat) {
       if (!cat) return 'Peserta';
       const s = String(cat).trim().toLowerCase();
@@ -859,33 +719,24 @@
       return 'Peserta';
     }
 
-    // ON DOM LOAD INITIALIZATION
-    window.addEventListener('DOMContentLoaded', () => {
-      loadInitialData();
+    window.addEventListener('DOMContentLoaded', async () => {
+      await loadInitialDataFromFirebase();
       loadLayoutSettings();
       checkURLParameters();
     });
 
-    // UTF-8 SAFE BASE64 ENCODER & DECODER
     function encodePayload(obj) {
       try {
-        const jsonStr = JSON.stringify(obj);
-        return encodeURIComponent(btoa(unescape(encodeURIComponent(jsonStr))));
-      } catch(e) {
-        return "";
-      }
+        return encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(obj)))));
+      } catch(e) { return ""; }
     }
 
     function decodePayload(str) {
       try {
-        const jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(str))));
-        return JSON.parse(jsonStr);
-      } catch(e) {
-        return null;
-      }
+        return JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(str)))));
+      } catch(e) { return null; }
     }
 
-    // DYNAMIC VERIFICATION URL FOR QR CODES
     function getVerificationUrl(itemOrCode) {
       const baseUrl = window.location.origin + window.location.pathname;
       if (typeof itemOrCode === 'object' && itemOrCode !== null) {
@@ -896,8 +747,7 @@
           c: itemOrCode.category,
           no: itemOrCode.certNo
         };
-        const payload = encodePayload(miniObj);
-        return `${baseUrl}?id=${encodeURIComponent(itemOrCode.numCode || itemOrCode.id)}&v=${payload}`;
+        return `${baseUrl}?id=${encodeURIComponent(itemOrCode.numCode || itemOrCode.id)}&v=${encodePayload(miniObj)}`;
       } else {
         const found = state.certificates.find(c => 
           (c.id && String(c.id).trim().toLowerCase() === String(itemOrCode).trim().toLowerCase()) ||
@@ -908,32 +758,48 @@
       }
     }
 
-    // LOAD INITIAL DATA FROM LOCAL STORAGE WITH CATEGORY NORMALIZATION
-    function loadInitialData() {
+    // MEMBUAT DISAMBUNGKAN KE CLOUD FIRESTORE
+    async function loadInitialDataFromFirebase() {
       state.isAdminLoggedIn = localStorage.getItem('kembaranas_admin_session') === 'true';
 
-      const saved = localStorage.getItem('kembaranas_certificates');
-      if (saved) {
-        try { 
-          state.certificates = JSON.parse(saved); 
-          state.certificates.forEach(c => {
-            c.category = normalizeCategory(c.category);
+      try {
+        const snapshot = await db.collection("certificates").get();
+        if (!snapshot.empty) {
+          const fetched = [];
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            data.category = normalizeCategory(data.category);
+            fetched.push(data);
           });
-        } 
-        catch(e) { 
-          state.certificates = DEFAULT_CERTIFICATES.map(c => ({...c, category: normalizeCategory(c.category)})); 
+          state.certificates = fetched;
+          localStorage.setItem('kembaranas_certificates', JSON.stringify(fetched));
+        } else {
+          state.certificates = DEFAULT_CERTIFICATES.map(c => ({...c, category: normalizeCategory(c.category)}));
+          await saveCertificatesToStorage();
         }
-      } else {
-        state.certificates = DEFAULT_CERTIFICATES.map(c => ({...c, category: normalizeCategory(c.category)}));
-        saveCertificatesToStorage();
+      } catch (err) {
+        console.warn("Mencoba koneksi ke Firestore...", err);
+        const saved = localStorage.getItem('kembaranas_certificates');
+        if (saved) {
+          try { state.certificates = JSON.parse(saved); } catch(e) { state.certificates = DEFAULT_CERTIFICATES; }
+        } else {
+          state.certificates = DEFAULT_CERTIFICATES;
+        }
       }
     }
 
-    function saveCertificatesToStorage() {
+    async function saveCertificatesToStorage() {
       localStorage.setItem('kembaranas_certificates', JSON.stringify(state.certificates));
+      
+      // Batch save ke Firestore Server Cloud
+      const batch = db.batch();
+      state.certificates.forEach(cert => {
+        const docRef = db.collection("certificates").doc(String(cert.id));
+        batch.set(docRef, cert, { merge: true });
+      });
+      await batch.commit().catch(e => console.error("Firestore error:", e));
     }
 
-    // LOAD & SAVE LAYOUT SETTINGS
     function loadLayoutSettings() {
       const saved = localStorage.getItem('kembaranas_layout_v3');
       if (saved) {
@@ -942,9 +808,7 @@
           ['Peserta', 'Bindamping', 'Panitia', 'Petugas Upacara'].forEach(cat => {
             if (!state.layouts[cat]) state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat] };
           });
-        } catch(e) {
-          state.layouts = JSON.parse(JSON.stringify(DEFAULT_LAYOUTS));
-        }
+        } catch(e) { state.layouts = JSON.parse(JSON.stringify(DEFAULT_LAYOUTS)); }
       } else {
         state.layouts = JSON.parse(JSON.stringify(DEFAULT_LAYOUTS));
         saveLayoutSettings();
@@ -967,8 +831,7 @@
         localStorage.setItem('kembaranas_layout_v3', JSON.stringify(state.layouts));
         return true;
       } catch (err) {
-        console.error("Storage limit reached:", err);
-        showToast("Storage penuh! Gambar background disimpan sementara untuk sesi ini.", "warning");
+        showToast("Storage lokal penuh! Layout disimpan sementara.", "warning");
         return false;
       }
     }
@@ -977,9 +840,7 @@
       onLayoutInputChange();
       const success = saveLayoutSettings();
       const cat = document.getElementById('editorCategorySelect')?.value || 'Peserta';
-      if (success) {
-        showToast(`Pengaturan layout & template kategori ${cat} berhasil disimpan!`, "success");
-      }
+      if (success) showToast(`Pengaturan layout & template kategori ${cat} tersimpan!`, "success");
     }
 
     function getMaxNumCode() {
@@ -987,14 +848,11 @@
       let max = 0;
       state.certificates.forEach(c => {
         const num = parseInt(c.numCode || c.id, 10);
-        if (!isNaN(num) && num > max) {
-          max = num;
-        }
+        if (!isNaN(num) && num > max) max = num;
       });
       return max;
     }
 
-    // CHECK URL PARAMETERS
     function checkURLParameters() {
       const urlParams = new URLSearchParams(window.location.search);
       const payloadParam = urlParams.get('v');
@@ -1032,12 +890,9 @@
       }
     }
 
-    // VIEW SWITCHER
     function switchView(viewName) {
       state.currentView = viewName;
-      if (state.isAdminLoggedIn) {
-        localStorage.setItem('kembaranas_last_view', viewName);
-      }
+      if (state.isAdminLoggedIn) localStorage.setItem('kembaranas_last_view', viewName);
       document.getElementById('viewPublicVerification').classList.add('hidden');
       document.getElementById('viewPublicSearch').classList.add('hidden');
       document.getElementById('viewAdminDashboard').classList.add('hidden');
@@ -1087,12 +942,9 @@
             switchView('public_search');
           }
         });
-      } else {
-        openLoginModal();
-      }
+      } else { openLoginModal(); }
     }
 
-    // FUNGSI PENCARIAN TERPERBAIKI DENGAN NAMA, NO SERTIFIKAT, ID, KATEGORI & SEKOLAH (MENGATASI MASALAH 2)
     function searchCertificate() {
       const input = document.getElementById('publicSearchInput').value.trim();
       if (!input) {
@@ -1102,22 +954,27 @@
       loadCertByCode(input);
     }
 
-    function loadCertByCode(query) {
+    // LOAD DENGAN DUKUNGAN REAL-TIME DARI FIRESTORE SERVER (BEBAS KENDALA GOOGLE SITES)
+    async function loadCertByCode(query) {
       if (!query) return;
       const q = String(query).trim().toLowerCase();
-      
-      const matches = state.certificates.filter(c => {
-        const idMatch = c.id && String(c.id).trim().toLowerCase() === q;
-        const numMatch = c.numCode && (
-          String(c.numCode).trim().toLowerCase() === q || 
-          (!isNaN(parseInt(q, 10)) && parseInt(c.numCode, 10) === parseInt(q, 10))
-        );
-        const certNoMatch = c.certNo && c.certNo.toLowerCase().includes(q);
-        const nameMatch = c.name && c.name.toLowerCase().includes(q);
-        const schoolMatch = c.school && c.school.toLowerCase().includes(q);
-        const catMatch = c.category && c.category.toLowerCase().includes(q);
-        return idMatch || numMatch || certNoMatch || nameMatch || schoolMatch || catMatch;
-      });
+
+      // 1. Coba cari dari local state
+      let matches = filterCertificates(q);
+
+      // 2. Jika tidak ada di lokal, Ambil data terbaru dari Cloud Server Firestore
+      if (matches.length === 0) {
+        try {
+          const snapshot = await db.collection("certificates").get();
+          if (!snapshot.empty) {
+            const fetched = [];
+            snapshot.forEach(doc => fetched.push(doc.data()));
+            state.certificates = fetched;
+            localStorage.setItem('kembaranas_certificates', JSON.stringify(fetched));
+            matches = filterCertificates(q);
+          }
+        } catch(e) { console.error("Remote Fetch Failed:", e); }
+      }
 
       const resultsContainer = document.getElementById('publicSearchResults');
 
@@ -1131,7 +988,6 @@
         switchView('public_verification');
         showToast("Sertifikat berhasil ditemukan!", "success");
       } else {
-        // Cek jika ada kecocokan persis pada nama atau nomor
         const exactMatch = matches.find(c => 
           (c.name && c.name.trim().toLowerCase() === q) || 
           (c.numCode && String(c.numCode).trim().toLowerCase() === q) ||
@@ -1149,7 +1005,21 @@
       }
     }
 
-    // RENDER LIST PILIHAN PESERTA SAAT NAMA DI-SEARCH MULTIPEL
+    function filterCertificates(q) {
+      return state.certificates.filter(c => {
+        const idMatch = c.id && String(c.id).trim().toLowerCase() === q;
+        const numMatch = c.numCode && (
+          String(c.numCode).trim().toLowerCase() === q || 
+          (!isNaN(parseInt(q, 10)) && parseInt(c.numCode, 10) === parseInt(q, 10))
+        );
+        const certNoMatch = c.certNo && c.certNo.toLowerCase().includes(q);
+        const nameMatch = c.name && c.name.toLowerCase().includes(q);
+        const schoolMatch = c.school && c.school.toLowerCase().includes(q);
+        const catMatch = c.category && c.category.toLowerCase().includes(q);
+        return idMatch || numMatch || certNoMatch || nameMatch || schoolMatch || catMatch;
+      });
+    }
+
     function renderPublicSearchResults(matches, query) {
       const container = document.getElementById('publicSearchResults');
       if (!container) return;
@@ -1221,9 +1091,7 @@
             <i class="fa-solid fa-file-lines text-brand-red"></i>
             <span>No. Sertifikat</span>
           </div>
-          <p class="text-xs sm:text-sm font-mono font-bold text-gray-700 mt-1 pl-6">
-            ${cert.certNo}
-          </p>
+          <p class="text-xs sm:text-sm font-mono font-bold text-gray-700 mt-1 pl-6">${cert.certNo}</p>
         </div>
 
         <div class="border-b border-gray-100 pb-3">
@@ -1231,9 +1099,7 @@
             <i class="fa-solid fa-calendar-days text-brand-red"></i>
             <span>Kabupaten/Kota, Tanggal</span>
           </div>
-          <p class="text-xs sm:text-sm font-medium text-gray-600 mt-1 pl-6">
-            ${cert.locationDate || "Bandar Lampung, 31 Oktober 2026"}
-          </p>
+          <p class="text-xs sm:text-sm font-medium text-gray-600 mt-1 pl-6">${cert.locationDate || "Bandar Lampung, 31 Oktober 2026"}</p>
         </div>
 
         <div class="border-b border-gray-100 pb-3">
@@ -1241,9 +1107,7 @@
             <i class="fa-solid fa-house text-brand-red"></i>
             <span>JSIT / SAKO SIT</span>
           </div>
-          <p class="text-xs sm:text-sm font-medium text-gray-600 mt-1 pl-6">
-            ${cert.sakoOrg || "JSIT Wilayah Lampung"}
-          </p>
+          <p class="text-xs sm:text-sm font-medium text-gray-600 mt-1 pl-6">${cert.sakoOrg || "JSIT Wilayah Lampung"}</p>
         </div>
 
         <div class="border-b border-gray-100 pb-3">
@@ -1251,9 +1115,7 @@
             <i class="fa-solid fa-pen-nib text-brand-red"></i>
             <span>Ditandatangani</span>
           </div>
-          <p class="text-xs sm:text-sm font-medium text-gray-600 mt-1 pl-6">
-            ${cert.signatory || "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III"}
-          </p>
+          <p class="text-xs sm:text-sm font-medium text-gray-600 mt-1 pl-6">${cert.signatory || "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III"}</p>
         </div>
 
         <div class="border-b border-gray-100 pb-3">
@@ -1261,9 +1123,7 @@
             <i class="fa-solid fa-envelope text-brand-red"></i>
             <span>Perihal</span>
           </div>
-          <p class="text-xs sm:text-sm font-medium text-gray-600 mt-1 pl-6">
-            ${cert.subject || `Sertifikat ${cert.category} Kembaranas III SAKO SIT`}
-          </p>
+          <p class="text-xs sm:text-sm font-medium text-gray-600 mt-1 pl-6">${cert.subject || `Sertifikat ${cert.category} Kembaranas III SAKO SIT`}</p>
         </div>
 
         <div class="pb-1 bg-red-50/50 p-3 rounded-lg border border-red-100">
@@ -1271,16 +1131,12 @@
             <i class="fa-solid fa-user-check"></i>
             <span>Ditujukan Kepada Pemilik Sertifikat:</span>
           </div>
-          <p class="text-sm sm:text-base font-extrabold text-gray-900 mt-1 pl-6">
-            ${cert.name}
-          </p>
+          <p class="text-sm sm:text-base font-extrabold text-gray-900 mt-1 pl-6">${cert.name}</p>
           <p class="text-xs font-semibold text-gray-600 pl-6 mt-0.5">
             <i class="fa-solid fa-building-columns mr-1 text-gray-400"></i> ${cert.school}
           </p>
           <div class="mt-2 pl-6">
-            <span class="px-2.5 py-0.5 bg-brand-red text-white text-[10px] font-bold rounded uppercase tracking-wider">
-              ${cert.category}
-            </span>
+            <span class="px-2.5 py-0.5 bg-brand-red text-white text-[10px] font-bold rounded uppercase tracking-wider">${cert.category}</span>
           </div>
         </div>
       `;
@@ -1289,25 +1145,17 @@
     function copyPublicVerificationLink() {
       if (!state.activeCert) return;
       const shareUrl = getVerificationUrl(state.activeCert);
-      
       const tempInput = document.createElement('input');
       tempInput.value = shareUrl;
       document.body.appendChild(tempInput);
       tempInput.select();
       document.execCommand('copy');
       document.body.removeChild(tempInput);
-
       showToast("Tautan verifikasi berhasil disalin!", "success");
     }
 
-    // LOGIN MODAL CONTROLS
-    function openLoginModal() {
-      document.getElementById('loginModal').classList.remove('hidden');
-    }
-
-    function closeLoginModal() {
-      document.getElementById('loginModal').classList.add('hidden');
-    }
+    function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
+    function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
 
     function handleLoginSubmit(e) {
       e.preventDefault();
@@ -1325,13 +1173,11 @@
       }
     }
 
-    // ADMIN TAB SWITCHER
     function switchAdminTab(tabName) {
       state.adminTab = tabName;
       document.getElementById('adminTabData').classList.add('hidden');
       document.getElementById('adminTabImport').classList.add('hidden');
       document.getElementById('adminTabTemplate').classList.add('hidden');
-      document.getElementById('adminTabGuide').classList.add('hidden');
 
       document.querySelectorAll('.admin-tab-btn').forEach(btn => {
         btn.className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 transition flex items-center space-x-1.5";
@@ -1348,13 +1194,9 @@
         document.getElementById('adminTabTemplate').classList.remove('hidden');
         document.getElementById('tabBtnTemplate').className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white shadow-sm";
         onEditorCategoryChange();
-      } else if (tabName === 'guide') {
-        document.getElementById('adminTabGuide').classList.remove('hidden');
-        document.getElementById('tabBtnGuide').className = "admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white shadow-sm";
       }
     }
 
-    // DATA FILTERING & RENDER TABLE (TERPERBAIKI PETUGAS UPACARA)
     function setCategoryFilter(cat) {
       state.activeCategoryFilter = (cat === 'ALL') ? 'ALL' : normalizeCategory(cat);
       state.currentPage = 1;
@@ -1385,11 +1227,9 @@
 
     function getFilteredData() {
       let result = [...state.certificates];
-      
       if (state.activeCategoryFilter !== 'ALL') {
         result = result.filter(c => c.category === state.activeCategoryFilter);
       }
-
       const search = document.getElementById('adminSearchInput')?.value.trim().toLowerCase();
       if (search) {
         result = result.filter(c => 
@@ -1399,7 +1239,6 @@
           (c.numCode && c.numCode.toLowerCase().includes(search))
         );
       }
-
       return result;
     }
 
@@ -1551,7 +1390,6 @@
       container.appendChild(nextBtn);
     }
 
-    // MULTI SELECT & BULK ACTIONS
     function toggleSelectAll(masterCb) {
       const filtered = getFilteredData();
       const startIndex = (state.currentPage - 1) * state.pageSize;
@@ -1562,7 +1400,6 @@
         if (masterCb.checked) state.selectedIds.add(item.id);
         else state.selectedIds.delete(item.id);
       });
-
       renderAdminTableRowsOnly();
     }
 
@@ -1594,14 +1431,21 @@
 
       openConfirmModal({
         title: "Hapus Data Terpilih",
-        message: `Apakah Anda yakin ingin menghapus ${count} data sertifikat yang dipilih?`,
+        message: `Apakah Anda yakin ingin menghapus ${count} data sertifikat terpilih?`,
         icon: "fa-trash-can",
         iconBg: "bg-red-100 text-red-600",
         proceedText: "Ya, Hapus Semua",
-        onProceed: () => {
+        onProceed: async () => {
+          // Hapus dari Firestore & Local
+          const batch = db.batch();
+          state.selectedIds.forEach(id => {
+            batch.delete(db.collection("certificates").doc(id));
+          });
+          await batch.commit().catch(e => console.error(e));
+
           state.certificates = state.certificates.filter(c => !state.selectedIds.has(c.id));
           state.selectedIds.clear();
-          saveCertificatesToStorage();
+          localStorage.setItem('kembaranas_certificates', JSON.stringify(state.certificates));
           renderAdminTable();
           showToast(`Berhasil menghapus ${count} data sertifikat!`, "success");
         }
@@ -1618,10 +1462,11 @@
         icon: "fa-trash-can",
         iconBg: "bg-red-100 text-red-600",
         proceedText: "Hapus Data",
-        onProceed: () => {
+        onProceed: async () => {
+          await db.collection("certificates").doc(id).delete().catch(e=>console.error(e));
           state.certificates = state.certificates.filter(c => c.id !== id);
           state.selectedIds.delete(id);
-          saveCertificatesToStorage();
+          localStorage.setItem('kembaranas_certificates', JSON.stringify(state.certificates));
           renderAdminTable();
           showToast("Data sertifikat berhasil dihapus!", "success");
         }
@@ -1638,14 +1483,12 @@
       showToast("Tautan langsung berhasil disalin!", "success");
     }
 
-    // EXPORT DATA TO EXCEL
     function exportDataToExcel(records = null) {
       const dataToExport = records || getFilteredData();
       if (dataToExport.length === 0) {
         showToast("Tidak ada data untuk diexport!", "warning");
         return;
       }
-
       const rows = dataToExport.map((c, i) => ({
         "No": i + 1,
         "No Sertifikat": c.certNo,
@@ -1668,26 +1511,20 @@
       exportDataToExcel(selectedRecords);
     }
 
-    // ADD / EDIT RECORD MODAL LOGIC
     function openAddModal() {
       document.getElementById('editRecordId').value = '';
       document.getElementById('addEditModalTitle').innerText = 'Tambah Data Sertifikat Baru';
-      
       const nextNum = getMaxNumCode() + 1;
       const codeStr = String(nextNum).padStart(4, '0');
-
       document.getElementById('formNumCode').value = codeStr;
       document.getElementById('formName').value = '';
       document.getElementById('formSchool').value = '';
       document.getElementById('formCategory').value = 'Peserta';
       updateFormPreviewCertNo();
-
       document.getElementById('addEditModal').classList.remove('hidden');
     }
 
-    function closeAddEditModal() {
-      document.getElementById('addEditModal').classList.add('hidden');
-    }
+    function closeAddEditModal() { document.getElementById('addEditModal').classList.add('hidden'); }
 
     function updateFormPreviewCertNo() {
       const numCode = document.getElementById('formNumCode').value.padStart(4, '0');
@@ -1697,7 +1534,6 @@
     function editRecord(id) {
       const target = state.certificates.find(c => c.id === id);
       if (!target) return;
-
       document.getElementById('editRecordId').value = target.id;
       document.getElementById('addEditModalTitle').innerText = 'Edit Data Sertifikat';
       document.getElementById('formNumCode').value = target.numCode;
@@ -1705,11 +1541,10 @@
       document.getElementById('formSchool').value = target.school;
       document.getElementById('formCategory').value = normalizeCategory(target.category);
       updateFormPreviewCertNo();
-
       document.getElementById('addEditModal').classList.remove('hidden');
     }
 
-    function handleSaveRecord(e) {
+    async function handleSaveRecord(e) {
       e.preventDefault();
       const editId = document.getElementById('editRecordId').value;
       const numCode = document.getElementById('formNumCode').value.padStart(4, '0');
@@ -1718,34 +1553,28 @@
       const category = normalizeCategory(document.getElementById('formCategory').value);
       const certNo = `${numCode}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`;
 
+      const newRecord = {
+        id: editId || numCode,
+        numCode, name, school, category, certNo,
+        locationDate: "Bandar Lampung, 31 Oktober 2026",
+        sakoOrg: "JSIT Wilayah Lampung",
+        signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III",
+        subject: `Sertifikat ${category} Kembaranas III SAKO SIT`
+      };
+
       if (editId) {
         const idx = state.certificates.findIndex(c => c.id === editId);
-        if (idx !== -1) {
-          state.certificates[idx] = {
-            ...state.certificates[idx],
-            numCode, name, school, category, certNo
-          };
-          showToast("Data sertifikat berhasil diperbarui!", "success");
-        }
+        if (idx !== -1) state.certificates[idx] = newRecord;
       } else {
-        const newRecord = {
-          id: numCode,
-          numCode, name, school, category, certNo,
-          locationDate: "Bandar Lampung, 31 Oktober 2026",
-          sakoOrg: "JSIT Wilayah Lampung",
-          signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III",
-          subject: `Sertifikat ${category} Kembaranas III SAKO SIT`
-        };
         state.certificates.push(newRecord);
-        showToast("Data sertifikat baru berhasil ditambahkan!", "success");
       }
 
-      saveCertificatesToStorage();
+      await saveCertificatesToStorage();
       closeAddEditModal();
       renderAdminTable();
+      showToast("Data sertifikat berhasil disimpan!", "success");
     }
 
-    // EXCEL FILE IMPORT PARSER DENGAN AUTONORMALISASI KATEGORI (MENGATASI MASALAH 1)
     function handleFileUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1800,7 +1629,6 @@
           renderImportPreviewTable(importMode, startingSeq);
           showToast(`Berhasil membaca ${state.importPreviewData.length} baris dari Excel!`, "success");
         } catch (err) {
-          console.error(err);
           showToast("Gagal memproses file Excel!", "error");
         }
       };
@@ -1828,14 +1656,13 @@
 
       if (badgeEl) {
         if (mode === 'append') {
-          badgeEl.innerHTML = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md font-bold text-xs"><i class="fa-solid fa-plus-circle mr-1"></i> Mode Append (Melanjutkan No: ${String(startingSeq).padStart(4, '0')})</span>`;
+          badgeEl.innerHTML = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md font-bold text-xs"><i class="fa-solid fa-plus-circle mr-1"></i> Mode Append (Lanjut No: ${String(startingSeq).padStart(4, '0')})</span>`;
         } else {
           badgeEl.innerHTML = `<span class="px-2.5 py-1 bg-red-100 text-red-800 rounded-md font-bold text-xs"><i class="fa-solid fa-arrows-rotate mr-1"></i> Mode Timpa Semua</span>`;
         }
       }
 
       tbody.innerHTML = '';
-
       state.importPreviewData.forEach((item, idx) => {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-gray-50";
@@ -1853,32 +1680,33 @@
 
     function processBatchImport() {
       if (state.importPreviewData.length === 0) return;
-
       const importMode = document.querySelector('input[name="importMode"]:checked')?.value || 'append';
 
       if (importMode === 'overwrite') {
         openConfirmModal({
           title: "Konfirmasi Timpa Semua Data",
-          message: `PERHATIAN: Mode Overwrite akan MENGHAPUS SELURUH ${state.certificates.length} data lama dan menggantikannya dengan ${state.importPreviewData.length} data baru dari Excel. Lanjutkan?`,
+          message: `Mode Overwrite akan MENGHAPUS SEMUA data lama dan menggantikannya dengan ${state.importPreviewData.length} data baru. Lanjutkan?`,
           icon: "fa-triangle-exclamation",
           iconBg: "bg-red-100 text-red-600",
           proceedText: "Ya, Ganti Semua Data",
-          onProceed: () => {
-            executeImportProcess(true);
-          }
+          onProceed: () => { executeImportProcess(true); }
         });
       } else {
         executeImportProcess(false);
       }
     }
 
-    function executeImportProcess(isOverwrite) {
+    async function executeImportProcess(isOverwrite) {
+      showToast("Mengunggah data ke Cloud Firebase...", "info");
+      
       if (isOverwrite) {
+        // Clear koleksi lama di Firestore jika Overwrite
+        const snapshot = await db.collection("certificates").get();
+        const deleteBatch = db.batch();
+        snapshot.forEach(doc => deleteBatch.delete(doc.ref));
+        await deleteBatch.commit().catch(e=>console.error(e));
         state.certificates = [];
       }
-
-      let addedCount = 0;
-      let updatedCount = 0;
 
       state.importPreviewData.forEach(item => {
         let finalNumCode = item.numCode;
@@ -1891,7 +1719,6 @@
         }
 
         const normCat = normalizeCategory(item.category);
-
         const newRecord = {
           id: finalNumCode,
           numCode: finalNumCode,
@@ -1908,15 +1735,13 @@
         const existingIdx = state.certificates.findIndex(c => c.id === finalNumCode);
         if (existingIdx !== -1 && isOverwrite) {
           state.certificates[existingIdx] = newRecord;
-          updatedCount++;
         } else {
           state.certificates.push(newRecord);
-          addedCount++;
         }
       });
 
-      saveCertificatesToStorage();
-      showToast(`Berhasil mengimpor! (${addedCount} data ditambahkan. Total database: ${state.certificates.length} sertifikat)`, "success");
+      await saveCertificatesToStorage();
+      showToast(`Impor berhasil! Total ${state.certificates.length} data tersimpan di Cloud Server.`, "success");
       state.importPreviewData = [];
       document.getElementById('importPreviewContainer').classList.add('hidden');
       setCategoryFilter('ALL');
@@ -1938,11 +1763,10 @@
       showToast("Template Excel berhasil diunduh!", "info");
     }
 
-    // CANVAS EDITOR LOGIC
+    // CANVAS RENDER LOGIC
     function onEditorCategoryChange() {
       const cat = normalizeCategory(document.getElementById('editorCategorySelect').value);
       document.getElementById('canvasCategoryBadge').innerText = cat;
-      
       const layout = state.layouts[cat] || DEFAULT_LAYOUTS[cat];
       
       document.getElementById('posYName').value = layout.posYName;
@@ -2021,12 +1845,10 @@
             if (!state.layouts[cat]) state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat] };
             state.layouts[cat].bgImage = compressedDataUrl;
 
-            const savedOk = saveLayoutSettings();
+            saveLayoutSettings();
             document.getElementById('bgRemoveContainer').classList.remove('hidden');
             renderCertCanvas();
-            if (savedOk) {
-              showToast(`Background custom kategori ${cat} tersimpan permanen!`, "success");
-            }
+            showToast(`Background custom kategori ${cat} tersimpan!`, "success");
           };
           finalImg.src = compressedDataUrl;
         };
@@ -2043,7 +1865,7 @@
         saveLayoutSettings();
         document.getElementById('bgRemoveContainer').classList.add('hidden');
         renderCertCanvas();
-        showToast(`Background custom kategori ${cat} berhasil dihapus`, "info");
+        showToast(`Background custom kategori ${cat} dihapus`, "info");
       }
     }
 
@@ -2052,24 +1874,16 @@
       state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat], bgImage: state.layouts[cat]?.bgImage || null };
       saveLayoutSettings();
       onEditorCategoryChange();
-      showToast(`Layout posisi kategori ${cat} direset ke default`, "info");
+      showToast(`Layout posisi kategori ${cat} direset`, "info");
     }
 
-    // PROMISE-BASED QR CODE CANVAS GENERATOR
     function generateQRCanvasElement(text, size = 160) {
       return new Promise((resolve) => {
         const tempDiv = document.createElement('div');
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.left = '-9999px';
-        tempDiv.style.top = '-9999px';
+        tempDiv.style.position = 'absolute'; tempDiv.style.left = '-9999px'; tempDiv.style.top = '-9999px';
         document.body.appendChild(tempDiv);
 
-        new QRCode(tempDiv, {
-          text: text,
-          width: size,
-          height: size,
-          correctLevel: QRCode.CorrectLevel.M
-        });
+        new QRCode(tempDiv, { text: text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
 
         let attempts = 0;
         const check = () => {
@@ -2094,7 +1908,6 @@
       });
     }
 
-    // REAL-TIME CANVAS CERTIFICATE RENDERER
     async function renderCertCanvas(sampleCert = null) {
       const canvas = document.getElementById('certCanvas');
       if (!canvas) return null;
@@ -2105,41 +1918,24 @@
       const layout = state.layouts[category] || DEFAULT_LAYOUTS[category];
 
       const cert = sampleCert || state.certificates.find(c => c.category === category) || {
-        name: "FAEYZA KENZIE GIAR PRAMIYADI", 
-        school: "SMAIT Ummul Quro Bogor",
-        certNo: "0001-0247/KEMBARANAS-III/SAKO-SIT/X/2026", 
-        category: category, 
-        numCode: "0001"
+        name: "FAEYZA KENZIE GIAR PRAMIYADI", school: "SMAIT Ummul Quro Bogor",
+        certNo: "0001-0247/KEMBARANAS-III/SAKO-SIT/X/2026", category: category, numCode: "0001"
       };
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw Background Image or Fallback Template
       if (state.loadedBgImages[category]) {
         ctx.drawImage(state.loadedBgImages[category], 0, 0, canvas.width, canvas.height);
       } else {
-        ctx.fillStyle = "#fdfbf7";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.strokeStyle = "#fa4622"; ctx.lineWidth = 14;
-        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
-        
-        ctx.strokeStyle = "#d97706"; ctx.lineWidth = 3;
-        ctx.strokeRect(34, 34, canvas.width - 68, canvas.height - 68);
-
-        ctx.fillStyle = "#fa4622";
-        ctx.beginPath(); ctx.arc(canvas.width / 2, 85, 45, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "#ffffff"; ctx.font = "bold 28px FontAwesome"; ctx.textAlign = "center";
-        ctx.fillText("", canvas.width / 2, 94);
-
-        ctx.fillStyle = "#0f172a"; ctx.font = "bold 32px 'Plus Jakarta Sans', sans-serif";
-        ctx.fillText("SERTIFIKAT PENGHARGAAN", canvas.width / 2, 180);
-        
-        ctx.fillStyle = "#d97706"; ctx.font = "bold 16px 'Plus Jakarta Sans', sans-serif";
-        ctx.fillText(`KEMBARANAS III SAKO SIT - ${category.toUpperCase()}`, canvas.width / 2, 215);
+        ctx.fillStyle = "#fdfbf7"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "#fa4622"; ctx.lineWidth = 14; ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+        ctx.strokeStyle = "#d97706"; ctx.lineWidth = 3; ctx.strokeRect(34, 34, canvas.width - 68, canvas.height - 68);
+        ctx.fillStyle = "#fa4622"; ctx.beginPath(); ctx.arc(canvas.width / 2, 85, 45, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#ffffff"; ctx.font = "bold 28px FontAwesome"; ctx.textAlign = "center"; ctx.fillText("", canvas.width / 2, 94);
+        ctx.fillStyle = "#0f172a"; ctx.font = "bold 32px 'Plus Jakarta Sans', sans-serif"; ctx.fillText("SERTIFIKAT PENGHARGAAN", canvas.width / 2, 180);
+        ctx.fillStyle = "#d97706"; ctx.font = "bold 16px 'Plus Jakarta Sans', sans-serif"; ctx.fillText(`KEMBARANAS III SAKO SIT - ${category.toUpperCase()}`, canvas.width / 2, 215);
       }
 
-      // Draw Cert No
       if (layout.showCertNo) {
         ctx.save();
         ctx.fillStyle = layout.colorCertNo || "#334155";
@@ -2149,40 +1945,27 @@
         ctx.restore();
       }
 
-      // Draw Name
-      ctx.fillStyle = "#1e1b4b"; 
-      ctx.font = `bold ${layout.fontSizeName}px 'Plus Jakarta Sans', sans-serif`; 
-      ctx.textAlign = "center";
+      ctx.fillStyle = "#1e1b4b"; ctx.font = `bold ${layout.fontSizeName}px 'Plus Jakarta Sans', sans-serif`; ctx.textAlign = "center";
       ctx.fillText(cert.name, canvas.width / 2, layout.posYName);
 
-      // Draw School
-      ctx.fillStyle = "#475569"; 
-      ctx.font = `500 ${layout.fontSizeSchool}px 'Plus Jakarta Sans', sans-serif`; 
-      ctx.textAlign = "center";
+      ctx.fillStyle = "#475569"; ctx.font = `500 ${layout.fontSizeSchool}px 'Plus Jakarta Sans', sans-serif`; ctx.textAlign = "center";
       ctx.fillText(cert.school, canvas.width / 2, layout.posYSchool);
 
-      // Render High Precision QR Code with White Quiet Zone
       const shareUrl = getVerificationUrl(cert);
       const qrElement = await generateQRCanvasElement(shareUrl, 140);
 
       if (qrElement) {
-        const qrSize = 140;
-        const padding = 12;
+        const qrSize = 140; const padding = 12;
         const totalSize = qrSize + (padding * 2);
         const boxX = layout.posXQR - padding;
         const boxY = layout.posYQR - padding;
 
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(boxX, boxY, totalSize, totalSize);
-        ctx.strokeStyle = "#E2E8F0"; 
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(boxX, boxY, totalSize, totalSize);
-
+        ctx.fillStyle = "#FFFFFF"; ctx.fillRect(boxX, boxY, totalSize, totalSize);
+        ctx.strokeStyle = "#E2E8F0"; ctx.lineWidth = 1.5; ctx.strokeRect(boxX, boxY, totalSize, totalSize);
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(qrElement, layout.posXQR, layout.posYQR, qrSize, qrSize);
         ctx.imageSmoothingEnabled = true;
       }
-
       return canvas;
     }
 
@@ -2202,64 +1985,47 @@
     async function downloadCertForRecord(id) {
       const rec = state.certificates.find(c => c.id === id);
       if (!rec) return;
-
       const currentCatSelect = document.getElementById('editorCategorySelect');
       if (currentCatSelect) currentCatSelect.value = rec.category;
-
       await downloadTestCanvasImage(rec);
     }
 
     async function downloadActivePublicCert() {
-      if (state.activeCert) {
-        await downloadCertForRecord(state.activeCert.id);
-      }
+      if (state.activeCert) await downloadCertForRecord(state.activeCert.id);
     }
 
-    // CONFIRMATION DIALOG
     function openConfirmModal(opts) {
       document.getElementById('confirmModalTitle').innerText = opts.title || "Konfirmasi Tindakan";
       document.getElementById('confirmModalMessage').innerText = opts.message || "Apakah Anda yakin?";
-      
       const iconEl = document.getElementById('confirmModalIcon');
       const iconContainer = document.getElementById('confirmModalIconContainer');
-      
       iconEl.className = `fa-solid ${opts.icon || 'fa-triangle-exclamation'}`;
       iconContainer.className = `w-14 h-14 rounded-full mx-auto flex items-center justify-center text-2xl ${opts.iconBg || 'bg-red-100 text-red-600'}`;
-      
       document.getElementById('confirmBtnProceed').innerText = opts.proceedText || "Lanjutkan";
       state.confirmCallback = opts.onProceed || null;
-
       document.getElementById('customConfirmModal').classList.remove('hidden');
     }
 
     function closeConfirmModal(proceed) {
       document.getElementById('customConfirmModal').classList.add('hidden');
-      if (proceed && state.confirmCallback) {
-        state.confirmCallback();
-      }
+      if (proceed && state.confirmCallback) state.confirmCallback();
       state.confirmCallback = null;
     }
 
-    // TOAST NOTIFICATION SYSTEM
     function showToast(message, type = 'info') {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
-
-      let bg = "bg-gray-900 text-white";
-      let icon = "fa-circle-info";
-
+      let bg = "bg-gray-900 text-white"; let icon = "fa-circle-info";
       if (type === 'success') { bg = "bg-emerald-600 text-white"; icon = "fa-circle-check"; }
       if (type === 'error') { bg = "bg-red-600 text-white"; icon = "fa-circle-xmark"; }
       if (type === 'warning') { bg = "bg-amber-500 text-gray-900"; icon = "fa-triangle-exclamation"; }
 
       toast.className = `${bg} px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2.5 text-xs sm:text-sm font-semibold pointer-events-auto toast-enter`;
       toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i><span>${message}</span>`;
-
       container.appendChild(toast);
 
       setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s ease';
+        toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s ease';
         setTimeout(() => toast.remove(), 300);
       }, 3500);
     }
