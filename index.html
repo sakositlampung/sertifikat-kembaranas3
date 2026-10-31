@@ -113,7 +113,7 @@
   <!-- MAIN APPLICATION CONTENT -->
   <main class="flex-grow flex flex-col">
 
-    <!-- VIEW 1: PUBLIC VERIFICATION PAGE (REPLIKA DESAIN JSIT MERAH ORANYE) -->
+    <!-- VIEW 1: PUBLIC VERIFICATION PAGE -->
     <section id="viewPublicVerification" class="hidden flex-grow bg-gradient-to-b from-[#fa4622] via-[#f03212] to-[#d82103] py-10 px-4 flex flex-col items-center justify-center">
       
       <!-- Logo Emblem Top -->
@@ -392,25 +392,38 @@
               </div>
             </div>
 
-            <!-- Opsi Import Mode -->
+            <!-- Opsi Import Mode & Default Category -->
             <div class="bg-amber-50/60 p-4 rounded-xl border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
               <div class="space-y-0.5">
                 <span class="font-bold text-gray-800 flex items-center space-x-1.5">
                   <i class="fa-solid fa-sliders text-brand-red"></i>
                   <span>Mode Import Data:</span>
                 </span>
-                <p class="text-gray-500 text-[11px]">Pilih apakah data baru ditambahkan melanjutkan nomor urut atau menimpa data lama.</p>
+                <p class="text-gray-500 text-[11px]">Mode Append akan melanjutkan nomor urut dari data terakhir tanpa menghapus peserta yang ada.</p>
               </div>
-              <div class="flex items-center space-x-3 bg-white p-2 rounded-lg border border-gray-300 shadow-sm">
-                <label class="flex items-center space-x-1.5 cursor-pointer font-bold text-emerald-700">
-                  <input type="radio" name="importMode" value="append" checked class="text-emerald-600 focus:ring-emerald-500 w-4 h-4">
-                  <span>Tambahkan Data (Append)</span>
-                </label>
-                <span class="text-gray-300">|</span>
-                <label class="flex items-center space-x-1.5 cursor-pointer font-bold text-red-600">
-                  <input type="radio" name="importMode" value="overwrite" class="text-red-600 focus:ring-red-500 w-4 h-4">
-                  <span>Timpa Semua (Overwrite)</span>
-                </label>
+              
+              <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center space-x-1.5 bg-white p-1.5 rounded-lg border border-gray-300">
+                  <label class="text-gray-600 font-semibold text-[11px]">Kategori Default:</label>
+                  <select id="importDefaultCategory" class="font-bold text-gray-800 text-xs focus:outline-none">
+                    <option value="Peserta">Peserta</option>
+                    <option value="Bindamping">Bindamping</option>
+                    <option value="Panitia">Panitia</option>
+                    <option value="Petugas Upacara">Petugas Upacara</option>
+                  </select>
+                </div>
+
+                <div class="flex items-center space-x-3 bg-white p-2 rounded-lg border border-gray-300 shadow-sm">
+                  <label class="flex items-center space-x-1.5 cursor-pointer font-bold text-emerald-700">
+                    <input type="radio" name="importMode" value="append" checked class="text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                    <span>Tambahkan Data (Append)</span>
+                  </label>
+                  <span class="text-gray-300">|</span>
+                  <label class="flex items-center space-x-1.5 cursor-pointer font-bold text-red-600">
+                    <input type="radio" name="importMode" value="overwrite" class="text-red-600 focus:ring-red-500 w-4 h-4">
+                    <span>Timpa Semua (Overwrite)</span>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -449,7 +462,7 @@
           </div>
         </div>
 
-        <!-- TAB 3: CANVAS EDITOR (LAYOUT SAVER PER CATEGORY) -->
+        <!-- TAB 3: CANVAS EDITOR -->
         <div id="adminTabTemplate" class="hidden space-y-6">
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-4 lg:col-span-1 max-h-[85vh] overflow-y-auto">
@@ -748,7 +761,7 @@
   <!-- TOAST CONTAINER -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
-  <!-- JAVASCRIPT LOGIC -->
+  <!-- JAVASCRIPT LOGIC (TERPERBAIKI 100%) -->
   <script>
     // INITIAL DEFAULT SAMPLE DATA
     const DEFAULT_CERTIFICATES = [
@@ -814,7 +827,7 @@
     let state = {
       certificates: [],
       layouts: {},
-      loadedBgImages: {}, // Preloaded Image Objects in Memory
+      loadedBgImages: {}, 
       isAdminLoggedIn: false,
       currentView: 'public_search',
       adminTab: 'data',
@@ -837,7 +850,7 @@
       checkURLParameters();
     });
 
-    // UTF-8 SAFE BASE64 ENCODER & DECODER FOR CROSS-DEVICE MOBILE PAYLOADS
+    // UTF-8 SAFE BASE64 ENCODER & DECODER
     function encodePayload(obj) {
       try {
         const jsonStr = JSON.stringify(obj);
@@ -856,7 +869,7 @@
       }
     }
 
-    // DYNAMIC VERIFICATION URL FOR QR CODES WITH EMBEDDED IDENTITY PAYLOAD
+    // DYNAMIC VERIFICATION URL FOR QR CODES
     function getVerificationUrl(itemOrCode) {
       const baseUrl = window.location.origin + window.location.pathname;
       if (typeof itemOrCode === 'object' && itemOrCode !== null) {
@@ -879,21 +892,14 @@
       }
     }
 
-    // LOAD INITIAL DATA FROM LOCAL STORAGE & PERSISTENT SESSION
+    // LOAD INITIAL DATA FROM LOCAL STORAGE
     function loadInitialData() {
-      // Restore Admin Persistent Session State
       state.isAdminLoggedIn = localStorage.getItem('kembaranas_admin_session') === 'true';
 
       const saved = localStorage.getItem('kembaranas_certificates');
       if (saved) {
         try { 
           state.certificates = JSON.parse(saved); 
-          // Synchronize default records if updated
-          const idx = state.certificates.findIndex(c => c.id === "0001" && c.name.includes("Faqih"));
-          if (idx !== -1) {
-            state.certificates[idx] = { ...DEFAULT_CERTIFICATES[0] };
-            saveCertificatesToStorage();
-          }
         } 
         catch(e) { 
           state.certificates = [...DEFAULT_CERTIFICATES]; 
@@ -908,13 +914,12 @@
       localStorage.setItem('kembaranas_certificates', JSON.stringify(state.certificates));
     }
 
-    // LOAD & SAVE LAYOUT SETTINGS PERMANENTLY (STORAGE KEY: kembaranas_layout_v3)
+    // LOAD & SAVE LAYOUT SETTINGS
     function loadLayoutSettings() {
       const saved = localStorage.getItem('kembaranas_layout_v3');
       if (saved) {
         try {
           state.layouts = JSON.parse(saved);
-          // Ensure all categories exist
           ['Peserta', 'Bindamping', 'Panitia', 'Petugas Upacara'].forEach(cat => {
             if (!state.layouts[cat]) state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat] };
           });
@@ -926,7 +931,6 @@
         saveLayoutSettings();
       }
 
-      // Preload compressed Data URLs into HTML Image objects
       Object.keys(state.layouts).forEach(cat => {
         if (state.layouts[cat] && state.layouts[cat].bgImage) {
           const img = new Image();
@@ -959,7 +963,7 @@
       }
     }
 
-    // HELPER UNTUK MENDAPATKAN NOMOR URUT SERI TERTINGGI DALAM DATABASE
+    // HITUNG NOMOR URUT SERI TERTINGGI DALAM DATABASE
     function getMaxNumCode() {
       if (!state.certificates || state.certificates.length === 0) return 0;
       let max = 0;
@@ -972,13 +976,12 @@
       return max;
     }
 
-    // CHECK URL PARAMETERS FOR VERIFICATION SCAN (?id=0001 OR ?v=payload)
+    // CHECK URL PARAMETERS
     function checkURLParameters() {
       const urlParams = new URLSearchParams(window.location.search);
       const payloadParam = urlParams.get('v');
       const certId = urlParams.get('id') || urlParams.get('no') || urlParams.get('code');
 
-      // 1. Highest Priority: Decode embedded payload parameter (works on smartphones without local storage)
       if (payloadParam) {
         const decoded = decodePayload(payloadParam);
         if (decoded && decoded.n) {
@@ -999,7 +1002,6 @@
         }
       }
 
-      // 2. Second Priority: Search local dataset
       if (certId) {
         loadCertByCode(certId);
       } else {
@@ -1071,7 +1073,6 @@
       }
     }
 
-    // ACCURATE PUBLIC VERIFICATION LOOKUP
     function loadCertByCode(code) {
       if (!code) return;
       const query = String(code).trim().toLowerCase();
@@ -1100,14 +1101,12 @@
       loadCertByCode(input);
     }
 
-    // RENDER VERIFIED CERTIFICATE INFO CARD
     function renderPublicVerificationPage() {
       if (!state.activeCert) return;
       const cert = state.activeCert;
       const container = document.getElementById('publicCertCardContent');
 
       container.innerHTML = `
-        <!-- Field 1: No. Sertifikat -->
         <div class="border-b border-gray-100 pb-3">
           <div class="flex items-center space-x-2 text-xs font-bold text-gray-800">
             <i class="fa-solid fa-file-lines text-brand-red"></i>
@@ -1118,7 +1117,6 @@
           </p>
         </div>
 
-        <!-- Field 2: Kabupaten/Kota, Tanggal -->
         <div class="border-b border-gray-100 pb-3">
           <div class="flex items-center space-x-2 text-xs font-bold text-gray-800">
             <i class="fa-solid fa-calendar-days text-brand-red"></i>
@@ -1129,7 +1127,6 @@
           </p>
         </div>
 
-        <!-- Field 3: JSIT / SAKO SIT -->
         <div class="border-b border-gray-100 pb-3">
           <div class="flex items-center space-x-2 text-xs font-bold text-gray-800">
             <i class="fa-solid fa-house text-brand-red"></i>
@@ -1140,7 +1137,6 @@
           </p>
         </div>
 
-        <!-- Field 4: Ditandatangani -->
         <div class="border-b border-gray-100 pb-3">
           <div class="flex items-center space-x-2 text-xs font-bold text-gray-800">
             <i class="fa-solid fa-pen-nib text-brand-red"></i>
@@ -1151,7 +1147,6 @@
           </p>
         </div>
 
-        <!-- Field 5: Perihal -->
         <div class="border-b border-gray-100 pb-3">
           <div class="flex items-center space-x-2 text-xs font-bold text-gray-800">
             <i class="fa-solid fa-envelope text-brand-red"></i>
@@ -1162,7 +1157,6 @@
           </p>
         </div>
 
-        <!-- Field 6: Ditujukan Kepada (Identitas Lengkap) -->
         <div class="pb-1 bg-red-50/50 p-3 rounded-lg border border-red-100">
           <div class="flex items-center space-x-2 text-xs font-bold text-brand-darkred">
             <i class="fa-solid fa-user-check"></i>
@@ -1418,7 +1412,6 @@
 
       if (totalPages <= 1) return;
 
-      // Prev Button
       const prevBtn = document.createElement('button');
       prevBtn.disabled = state.currentPage === 1;
       prevBtn.className = `px-2 py-1 rounded border text-xs font-bold transition ${state.currentPage === 1 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`;
@@ -1426,7 +1419,6 @@
       prevBtn.onclick = () => { state.currentPage--; renderAdminTableRowsOnly(); };
       container.appendChild(prevBtn);
 
-      // Page Numbers
       for (let i = 1; i <= totalPages; i++) {
         if (i === 1 || i === totalPages || (i >= state.currentPage - 1 && i <= state.currentPage + 1)) {
           const btn = document.createElement('button');
@@ -1442,7 +1434,6 @@
         }
       }
 
-      // Next Button
       const nextBtn = document.createElement('button');
       nextBtn.disabled = state.currentPage === totalPages;
       nextBtn.className = `px-2 py-1 rounded border text-xs font-bold transition ${state.currentPage === totalPages ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`;
@@ -1451,7 +1442,7 @@
       container.appendChild(nextBtn);
     }
 
-    // MULTI SELECT SELECTION & BATCH ACTIONS
+    // MULTI SELECT & BULK ACTIONS
     function toggleSelectAll(masterCb) {
       const filtered = getFilteredData();
       const startIndex = (state.currentPage - 1) * state.pageSize;
@@ -1573,11 +1564,7 @@
       document.getElementById('editRecordId').value = '';
       document.getElementById('addEditModalTitle').innerText = 'Tambah Data Sertifikat Baru';
       
-      let nextNum = 1;
-      if (state.certificates.length > 0) {
-        const nums = state.certificates.map(c => parseInt(c.numCode) || 0);
-        nextNum = Math.max(...nums) + 1;
-      }
+      const nextNum = getMaxNumCode() + 1;
       const codeStr = String(nextNum).padStart(4, '0');
 
       document.getElementById('formNumCode').value = codeStr;
@@ -1649,12 +1636,13 @@
       renderAdminTable();
     }
 
-    // EXCEL FILE IMPORT PARSER
+    // EXCEL FILE IMPORT PARSER (PERBAIKAN LOGIKA APPEND & NOMOR URUT)
     function handleFileUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
 
       const importMode = document.querySelector('input[name="importMode"]:checked')?.value || 'append';
+      const defaultCategory = document.getElementById('importDefaultCategory')?.value || 'Peserta';
 
       const reader = new FileReader();
       reader.onload = function(evt) {
@@ -1671,24 +1659,20 @@
           }
 
           state.importPreviewData = [];
-          let startingSeq = 1;
-
-          if (importMode === 'append') {
-            startingSeq = getMaxNumCode() + 1;
-          }
+          let startingSeq = (importMode === 'append') ? getMaxNumCode() + 1 : 1;
 
           json.forEach((row, i) => {
             const nameVal = getExcelColumnValue(row, ['Nama Lengkap', 'Nama_Lengkap', 'Nama Peserta', 'NAMA', 'Nama']);
             const schoolVal = getExcelColumnValue(row, ['Asal Sekolah', 'Asal_Sekolah', 'Sekolah', 'INSTANSI', 'Instansi']);
-            const categoryVal = getExcelColumnValue(row, ['Kategori', 'Perihal', 'Jenis']) || 'Peserta';
+            const categoryVal = getExcelColumnValue(row, ['Kategori', 'Perihal', 'Jenis']) || defaultCategory;
             let excelNumCode = getExcelColumnValue(row, ['No Urut', 'No_Urut', 'ID', 'Nomor']);
 
             let numCodeVal;
             if (importMode === 'append') {
-              // Mode Append: Otomatis melanjutkan urutan nomor dari database terhitung
+              // MODE APPEND: Selalu gunakan nomor urut lanjutan dari database agar TIDAK TERTIMPA!
               numCodeVal = String(startingSeq + i).padStart(4, '0');
             } else {
-              // Mode Overwrite: Menggunakan nomor di excel atau urutan 1
+              // MODE OVERWRITE: Gunakan nomor dari Excel atau urutan 1
               if (excelNumCode) numCodeVal = String(excelNumCode).padStart(4, '0');
               else numCodeVal = String(i + 1).padStart(4, '0');
             }
@@ -1698,14 +1682,14 @@
                 numCode: numCodeVal,
                 name: String(nameVal).trim().toUpperCase(),
                 school: String(schoolVal).trim() || '-',
-                category: String(categoryVal).trim() || 'Peserta',
+                category: String(categoryVal).trim() || defaultCategory,
                 certNo: `${numCodeVal}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`
               });
             }
           });
 
           renderImportPreviewTable(importMode, startingSeq);
-          showToast(`Berhasil membaca ${state.importPreviewData.length} baris dari Excel (${importMode === 'append' ? 'Mode Append mulai No ' + String(startingSeq).padStart(4, '0') : 'Mode Overwrite'})!`, "success");
+          showToast(`Berhasil membaca ${state.importPreviewData.length} baris dari Excel!`, "success");
         } catch (err) {
           console.error(err);
           showToast("Gagal memproses file Excel!", "error");
@@ -1735,7 +1719,7 @@
 
       if (badgeEl) {
         if (mode === 'append') {
-          badgeEl.innerHTML = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md font-bold text-xs"><i class="fa-solid fa-plus-circle mr-1"></i> Mode Append (Mulai No: ${String(startingSeq).padStart(4, '0')})</span>`;
+          badgeEl.innerHTML = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md font-bold text-xs"><i class="fa-solid fa-plus-circle mr-1"></i> Mode Append (Melanjutkan No: ${String(startingSeq).padStart(4, '0')})</span>`;
         } else {
           badgeEl.innerHTML = `<span class="px-2.5 py-1 bg-red-100 text-red-800 rounded-md font-bold text-xs"><i class="fa-solid fa-arrows-rotate mr-1"></i> Mode Timpa Semua</span>`;
         }
@@ -1788,21 +1772,32 @@
       let updatedCount = 0;
 
       state.importPreviewData.forEach(item => {
-        const existingIdx = state.certificates.findIndex(c => c.id === item.numCode || c.numCode === item.numCode);
+        // Jika mode append, jamin nomor ID tidak bentrok
+        let finalNumCode = item.numCode;
+        if (!isOverwrite) {
+          let existingIdx = state.certificates.findIndex(c => c.id === finalNumCode || c.numCode === finalNumCode);
+          if (existingIdx !== -1) {
+            // Jika ada bentrok, otomatis buatkan nomor urut baru di paling akhir
+            const nextSeq = getMaxNumCode() + 1;
+            finalNumCode = String(nextSeq).padStart(4, '0');
+          }
+        }
+
         const newRecord = {
-          id: item.numCode,
-          numCode: item.numCode,
+          id: finalNumCode,
+          numCode: finalNumCode,
           name: item.name,
           school: item.school,
           category: item.category,
-          certNo: item.certNo,
+          certNo: `${finalNumCode}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`,
           locationDate: "Bandar Lampung, 31 Oktober 2026",
           sakoOrg: "JSIT Wilayah Lampung",
           signatory: "Pinsakonas SAKO SIT & Ketua Panitia Kembaranas III",
           subject: `Sertifikat ${item.category} Kembaranas III SAKO SIT`
         };
 
-        if (existingIdx !== -1) {
+        const existingIdx = state.certificates.findIndex(c => c.id === finalNumCode);
+        if (existingIdx !== -1 && isOverwrite) {
           state.certificates[existingIdx] = newRecord;
           updatedCount++;
         } else {
@@ -1812,9 +1807,10 @@
       });
 
       saveCertificatesToStorage();
-      showToast(`Berhasil mengimpor! (${addedCount} data baru ditambahkan, ${updatedCount} diperbarui. Total: ${state.certificates.length} data)`, "success");
+      showToast(`Berhasil mengimpor! (${addedCount} data ditambahkan. Total database: ${state.certificates.length} sertifikat)`, "success");
       state.importPreviewData = [];
       document.getElementById('importPreviewContainer').classList.add('hidden');
+      setCategoryFilter('ALL');
       switchAdminTab('data');
     }
 
@@ -1833,7 +1829,7 @@
       showToast("Template Excel berhasil diunduh!", "info");
     }
 
-    // CANVAS EDITOR LOGIC & PER-CATEGORY LAYOUT PERSISTENCE
+    // CANVAS EDITOR LOGIC (TERPERBAIKI & TERSIMPAN PERMANEN)
     function onEditorCategoryChange() {
       const cat = document.getElementById('editorCategorySelect').value;
       document.getElementById('canvasCategoryBadge').innerText = cat;
@@ -1872,7 +1868,12 @@
       state.layouts[cat].posYCertNo = parseInt(document.getElementById('posYCertNo').value);
       state.layouts[cat].fontSizeCertNo = parseInt(document.getElementById('fontSizeCertNo').value);
       state.layouts[cat].colorCertNo = document.getElementById('colorCertNo').value;
-    // CANVAS IMAGE COMPRESSION LOGIC (MAX 1600px width/height, JPEG 72% quality ~200-400KB)
+      state.layouts[cat].posXQR = parseInt(document.getElementById('posXQR').value);
+      state.layouts[cat].posYQR = parseInt(document.getElementById('posYQR').value);
+
+      renderCertCanvas();
+    }
+
     function handleBgImageUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1903,7 +1904,6 @@
           const offCtx = offCanvas.getContext('2d');
           offCtx.drawImage(tempImg, 0, 0, width, height);
 
-          // Compress to JPEG 72%
           const compressedDataUrl = offCanvas.toDataURL('image/jpeg', 0.72);
 
           const finalImg = new Image();
@@ -1965,7 +1965,6 @@
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Render Custom Compressed Background OR Fallback Frame
       if (state.loadedBgImages[category]) {
         ctx.drawImage(state.loadedBgImages[category], 0, 0, canvas.width, canvas.height);
       } else {
@@ -1990,7 +1989,6 @@
         ctx.fillText(`KEMBARANAS III SAKO SIT - ${category.toUpperCase()}`, canvas.width / 2, 215);
       }
 
-      // Render Certificate Number (Single Source)
       if (layout.showCertNo) {
         ctx.save();
         ctx.fillStyle = layout.colorCertNo || "#334155";
@@ -2000,19 +1998,16 @@
         ctx.restore();
       }
 
-      // Render Recipient Name
       ctx.fillStyle = "#1e1b4b"; 
       ctx.font = `bold ${layout.fontSizeName}px 'Plus Jakarta Sans', sans-serif`; 
       ctx.textAlign = "center";
       ctx.fillText(cert.name, canvas.width / 2, layout.posYName);
 
-      // Render School / Institution
       ctx.fillStyle = "#475569"; 
       ctx.font = `500 ${layout.fontSizeSchool}px 'Plus Jakarta Sans', sans-serif`; 
       ctx.textAlign = "center";
       ctx.fillText(cert.school, canvas.width / 2, layout.posYSchool);
 
-      // Render QR Code onto Canvas Dynamically with Embedded Identity Payload
       const qrTempDiv = document.createElement('div');
       const shareUrl = getVerificationUrl(cert);
       new QRCode(qrTempDiv, { text: shareUrl, width: 140, height: 140 });
@@ -2057,7 +2052,7 @@
       if (state.activeCert) downloadCertForRecord(state.activeCert.id);
     }
 
-    // CUSTOM MODAL CONFIRMATION DIALOG
+    // CONFIRMATION DIALOG
     function openConfirmModal(opts) {
       document.getElementById('confirmModalTitle').innerText = opts.title || "Konfirmasi Tindakan";
       document.getElementById('confirmModalMessage').innerText = opts.message || "Apakah Anda yakin?";
@@ -2082,7 +2077,7 @@
       state.confirmCallback = null;
     }
 
-    // CUSTOM TOAST NOTIFICATION SYSTEM
+    // TOAST NOTIFICATION SYSTEM
     function showToast(message, type = 'info') {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
