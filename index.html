@@ -392,10 +392,35 @@
               </div>
             </div>
 
+            <!-- Opsi Import Mode -->
+            <div class="bg-amber-50/60 p-4 rounded-xl border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div class="space-y-0.5">
+                <span class="font-bold text-gray-800 flex items-center space-x-1.5">
+                  <i class="fa-solid fa-sliders text-brand-red"></i>
+                  <span>Mode Import Data:</span>
+                </span>
+                <p class="text-gray-500 text-[11px]">Pilih apakah data baru ditambahkan melanjutkan nomor urut atau menimpa data lama.</p>
+              </div>
+              <div class="flex items-center space-x-3 bg-white p-2 rounded-lg border border-gray-300 shadow-sm">
+                <label class="flex items-center space-x-1.5 cursor-pointer font-bold text-emerald-700">
+                  <input type="radio" name="importMode" value="append" checked class="text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                  <span>Tambahkan Data (Append)</span>
+                </label>
+                <span class="text-gray-300">|</span>
+                <label class="flex items-center space-x-1.5 cursor-pointer font-bold text-red-600">
+                  <input type="radio" name="importMode" value="overwrite" class="text-red-600 focus:ring-red-500 w-4 h-4">
+                  <span>Timpa Semua (Overwrite)</span>
+                </label>
+              </div>
+            </div>
+
             <!-- Preview Data Excel -->
             <div id="importPreviewContainer" class="hidden space-y-4 pt-4 border-t border-gray-200">
-              <div class="flex items-center justify-between">
-                <h4 class="text-sm font-bold text-gray-800">Preview Data Excel (<span id="importPreviewCount">0</span> baris)</h4>
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div class="flex items-center space-x-2">
+                  <h4 class="text-sm font-bold text-gray-800">Preview Data Excel (<span id="importPreviewCount">0</span> baris)</h4>
+                  <div id="importModeInfoBadge"></div>
+                </div>
                 <button onclick="processBatchImport()" class="px-4 py-2 bg-brand-red hover:bg-brand-darkred text-white text-xs font-bold rounded-lg shadow transition flex items-center space-x-2">
                   <i class="fa-solid fa-check"></i>
                   <span>Proses & Simpan Ke Database</span>
@@ -545,14 +570,21 @@
                 </div>
               </div>
 
-              <div class="pt-2 flex gap-2">
-                <button onclick="downloadTestCanvasImage()" class="w-full py-2 bg-brand-navy hover:bg-gray-800 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-1.5 shadow">
-                  <i class="fa-solid fa-download"></i>
-                  <span>Download Tes Render</span>
+              <div class="pt-2 flex flex-col gap-2">
+                <button onclick="saveCurrentLayoutExplicitly()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-2 shadow">
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  <span>Simpan Pengaturan Layout & Template</span>
                 </button>
-                <button onclick="resetCategoryLayout()" class="py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-xs transition shadow" title="Reset Posisi Default">
-                  <i class="fa-solid fa-rotate-left"></i>
-                </button>
+
+                <div class="flex gap-2">
+                  <button onclick="downloadTestCanvasImage()" class="w-full py-2 bg-brand-navy hover:bg-gray-800 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-1.5 shadow">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Download Tes Render</span>
+                  </button>
+                  <button onclick="resetCategoryLayout()" class="py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-xs transition shadow" title="Reset Posisi Default">
+                    <i class="fa-solid fa-rotate-left"></i>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -910,9 +942,34 @@
     function saveLayoutSettings() {
       try {
         localStorage.setItem('kembaranas_layout_v3', JSON.stringify(state.layouts));
+        return true;
       } catch (err) {
-        showToast("Storage penuh! Silakan hapus atau kompresi gambar background.", "error");
+        console.error("Storage limit reached:", err);
+        showToast("Storage penuh! Gambar background disimpan sementara untuk sesi ini.", "warning");
+        return false;
       }
+    }
+
+    function saveCurrentLayoutExplicitly() {
+      onLayoutInputChange();
+      const success = saveLayoutSettings();
+      const cat = document.getElementById('editorCategorySelect')?.value || 'Peserta';
+      if (success) {
+        showToast(`Pengaturan layout & template kategori ${cat} berhasil disimpan!`, "success");
+      }
+    }
+
+    // HELPER UNTUK MENDAPATKAN NOMOR URUT SERI TERTINGGI DALAM DATABASE
+    function getMaxNumCode() {
+      if (!state.certificates || state.certificates.length === 0) return 0;
+      let max = 0;
+      state.certificates.forEach(c => {
+        const num = parseInt(c.numCode || c.id, 10);
+        if (!isNaN(num) && num > max) {
+          max = num;
+        }
+      });
+      return max;
     }
 
     // CHECK URL PARAMETERS FOR VERIFICATION SCAN (?id=0001 OR ?v=payload)
@@ -1597,6 +1654,8 @@
       const file = e.target.files[0];
       if (!file) return;
 
+      const importMode = document.querySelector('input[name="importMode"]:checked')?.value || 'append';
+
       const reader = new FileReader();
       reader.onload = function(evt) {
         try {
@@ -1612,34 +1671,48 @@
           }
 
           state.importPreviewData = [];
+          let startingSeq = 1;
+
+          if (importMode === 'append') {
+            startingSeq = getMaxNumCode() + 1;
+          }
+
           json.forEach((row, i) => {
             const nameVal = getExcelColumnValue(row, ['Nama Lengkap', 'Nama_Lengkap', 'Nama Peserta', 'NAMA', 'Nama']);
             const schoolVal = getExcelColumnValue(row, ['Asal Sekolah', 'Asal_Sekolah', 'Sekolah', 'INSTANSI', 'Instansi']);
             const categoryVal = getExcelColumnValue(row, ['Kategori', 'Perihal', 'Jenis']) || 'Peserta';
-            let numCodeVal = getExcelColumnValue(row, ['No Urut', 'No_Urut', 'ID', 'Nomor']);
+            let excelNumCode = getExcelColumnValue(row, ['No Urut', 'No_Urut', 'ID', 'Nomor']);
 
-            if (!numCodeVal) numCodeVal = String(i + 1).padStart(4, '0');
-            else numCodeVal = String(numCodeVal).padStart(4, '0');
+            let numCodeVal;
+            if (importMode === 'append') {
+              // Mode Append: Otomatis melanjutkan urutan nomor dari database terhitung
+              numCodeVal = String(startingSeq + i).padStart(4, '0');
+            } else {
+              // Mode Overwrite: Menggunakan nomor di excel atau urutan 1
+              if (excelNumCode) numCodeVal = String(excelNumCode).padStart(4, '0');
+              else numCodeVal = String(i + 1).padStart(4, '0');
+            }
 
             if (nameVal) {
               state.importPreviewData.push({
                 numCode: numCodeVal,
-                name: String(nameVal).toUpperCase(),
-                school: String(schoolVal) || '-',
-                category: categoryVal,
+                name: String(nameVal).trim().toUpperCase(),
+                school: String(schoolVal).trim() || '-',
+                category: String(categoryVal).trim() || 'Peserta',
                 certNo: `${numCodeVal}-0247/KEMBARANAS-III/SAKO-SIT/X/2026`
               });
             }
           });
 
-          renderImportPreviewTable();
-          showToast(`Berhasil membaca ${state.importPreviewData.length} baris dari Excel!`, "success");
+          renderImportPreviewTable(importMode, startingSeq);
+          showToast(`Berhasil membaca ${state.importPreviewData.length} baris dari Excel (${importMode === 'append' ? 'Mode Append mulai No ' + String(startingSeq).padStart(4, '0') : 'Mode Overwrite'})!`, "success");
         } catch (err) {
           console.error(err);
           showToast("Gagal memproses file Excel!", "error");
         }
       };
       reader.readAsArrayBuffer(file);
+      e.target.value = '';
     }
 
     function getExcelColumnValue(rowObj, potentialKeys) {
@@ -1651,13 +1724,23 @@
       return "";
     }
 
-    function renderImportPreviewTable() {
+    function renderImportPreviewTable(mode = 'append', startingSeq = 1) {
       const container = document.getElementById('importPreviewContainer');
       const tbody = document.getElementById('importPreviewTableBody');
       const countEl = document.getElementById('importPreviewCount');
+      const badgeEl = document.getElementById('importModeInfoBadge');
 
       container.classList.remove('hidden');
       countEl.innerText = state.importPreviewData.length;
+
+      if (badgeEl) {
+        if (mode === 'append') {
+          badgeEl.innerHTML = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md font-bold text-xs"><i class="fa-solid fa-plus-circle mr-1"></i> Mode Append (Mulai No: ${String(startingSeq).padStart(4, '0')})</span>`;
+        } else {
+          badgeEl.innerHTML = `<span class="px-2.5 py-1 bg-red-100 text-red-800 rounded-md font-bold text-xs"><i class="fa-solid fa-arrows-rotate mr-1"></i> Mode Timpa Semua</span>`;
+        }
+      }
+
       tbody.innerHTML = '';
 
       state.importPreviewData.forEach((item, idx) => {
@@ -1678,6 +1761,32 @@
     function processBatchImport() {
       if (state.importPreviewData.length === 0) return;
 
+      const importMode = document.querySelector('input[name="importMode"]:checked')?.value || 'append';
+
+      if (importMode === 'overwrite') {
+        openConfirmModal({
+          title: "Konfirmasi Timpa Semua Data",
+          message: `PERHATIAN: Mode Overwrite akan MENGHAPUS SELURUH ${state.certificates.length} data lama dan menggantikannya dengan ${state.importPreviewData.length} data baru dari Excel. Lanjutkan?`,
+          icon: "fa-triangle-exclamation",
+          iconBg: "bg-red-100 text-red-600",
+          proceedText: "Ya, Ganti Semua Data",
+          onProceed: () => {
+            executeImportProcess(true);
+          }
+        });
+      } else {
+        executeImportProcess(false);
+      }
+    }
+
+    function executeImportProcess(isOverwrite) {
+      if (isOverwrite) {
+        state.certificates = [];
+      }
+
+      let addedCount = 0;
+      let updatedCount = 0;
+
       state.importPreviewData.forEach(item => {
         const existingIdx = state.certificates.findIndex(c => c.id === item.numCode || c.numCode === item.numCode);
         const newRecord = {
@@ -1695,13 +1804,15 @@
 
         if (existingIdx !== -1) {
           state.certificates[existingIdx] = newRecord;
+          updatedCount++;
         } else {
           state.certificates.push(newRecord);
+          addedCount++;
         }
       });
 
       saveCertificatesToStorage();
-      showToast(`Berhasil menyimpan ${state.importPreviewData.length} data sertifikat!`, "success");
+      showToast(`Berhasil mengimpor! (${addedCount} data baru ditambahkan, ${updatedCount} diperbarui. Total: ${state.certificates.length} data)`, "success");
       state.importPreviewData = [];
       document.getElementById('importPreviewContainer').classList.add('hidden');
       switchAdminTab('data');
@@ -1761,14 +1872,7 @@
       state.layouts[cat].posYCertNo = parseInt(document.getElementById('posYCertNo').value);
       state.layouts[cat].fontSizeCertNo = parseInt(document.getElementById('fontSizeCertNo').value);
       state.layouts[cat].colorCertNo = document.getElementById('colorCertNo').value;
-      state.layouts[cat].posXQR = parseInt(document.getElementById('posXQR').value);
-      state.layouts[cat].posYQR = parseInt(document.getElementById('posYQR').value);
-
-      saveLayoutSettings();
-      renderCertCanvas();
-    }
-
-    // CANVAS IMAGE COMPRESSION LOGIC (MAX 1600px width, JPEG 82% quality ~300-500KB)
+    // CANVAS IMAGE COMPRESSION LOGIC (MAX 1600px width/height, JPEG 72% quality ~200-400KB)
     function handleBgImageUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1782,11 +1886,16 @@
           const offCanvas = document.createElement('canvas');
           let width = tempImg.width;
           let height = tempImg.height;
-          const maxWidth = 1600;
+          const maxDim = 1600;
 
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
           }
 
           offCanvas.width = width;
@@ -1794,8 +1903,8 @@
           const offCtx = offCanvas.getContext('2d');
           offCtx.drawImage(tempImg, 0, 0, width, height);
 
-          // Compress to JPEG 82%
-          const compressedDataUrl = offCanvas.toDataURL('image/jpeg', 0.82);
+          // Compress to JPEG 72%
+          const compressedDataUrl = offCanvas.toDataURL('image/jpeg', 0.72);
 
           const finalImg = new Image();
           finalImg.onload = function() {
@@ -1803,10 +1912,12 @@
             if (!state.layouts[cat]) state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat] };
             state.layouts[cat].bgImage = compressedDataUrl;
 
-            saveLayoutSettings();
+            const savedOk = saveLayoutSettings();
             document.getElementById('bgRemoveContainer').classList.remove('hidden');
             renderCertCanvas();
-            showToast(`Background custom kategori ${cat} tersimpan permanen!`, "success");
+            if (savedOk) {
+              showToast(`Background custom kategori ${cat} tersimpan permanen!`, "success");
+            }
           };
           finalImg.src = compressedDataUrl;
         };
