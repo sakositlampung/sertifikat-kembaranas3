@@ -627,7 +627,7 @@
               <div class="pt-2 flex flex-col gap-2">
                 <button onclick="saveCurrentLayoutExplicitly()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-2 shadow">
                   <i class="fa-solid fa-floppy-disk"></i>
-                  <span>Simpan Pengaturan Layout (Cloud)</span>
+                  <span>Simpan Pengaturan Layout (Cloud Server)</span>
                 </button>
 
                 <div class="flex gap-2">
@@ -811,7 +811,7 @@
 
     let state = {
       certificates: [],
-      layouts: {},
+      layouts: JSON.parse(JSON.stringify(DEFAULT_LAYOUTS)),
       loadedBgImages: {}, 
       isAdminLoggedIn: false,
       currentView: 'public_search',
@@ -990,38 +990,33 @@
       await batch.commit().catch(e => console.error("Firestore error:", e));
     }
 
-    // PERBAIKAN: SINKRONISASI PENGATURAN LAYOUT & BACKGROUND DENGAN FIRESTORE
+    // LOAD LAYOUT DENGAN SINKRONISASI FIRESTORE PER-KATEGORI (UNTUK MENGHINDARI FIREBASE 1MB DOCUMENT LIMIT)
     async function loadLayoutSettings() {
       try {
-        const doc = await db.collection("settings").doc("layouts").get();
-        if (doc.exists && doc.data()) {
-          state.layouts = doc.data();
+        const snapshot = await db.collection("layouts").get();
+        if (!snapshot.empty) {
+          snapshot.forEach(doc => {
+            const cat = doc.id;
+            state.layouts[cat] = doc.data();
+          });
           localStorage.setItem('kembaranas_layout_v3', JSON.stringify(state.layouts));
         } else {
           loadLayoutFromLocalStorageOrDefault();
         }
       } catch (err) {
-        console.warn("Gagal membaca layout Firestore, menggunakan cache lokal:", err);
+        console.warn("Membaca layout dari cache lokal:", err);
         loadLayoutFromLocalStorageOrDefault();
       }
 
-      const preloadPromises = Object.keys(state.layouts).map(cat => {
-        return new Promise((resolve) => {
-          if (state.layouts[cat] && state.layouts[cat].bgImage) {
-            const img = new Image();
-            img.onload = () => {
-              state.loadedBgImages[cat] = img;
-              resolve();
-            };
-            img.onerror = () => resolve();
-            img.src = state.layouts[cat].bgImage;
-          } else {
-            resolve();
-          }
-        });
+      const categories = ['Peserta', 'Bindamping', 'Panitia', 'Petugas Upacara'];
+      categories.forEach(cat => {
+        if (!state.layouts[cat]) state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat] };
       });
 
-      await Promise.all(preloadPromises);
+      // Preload semua gambar latar belakang
+      for (let cat of categories) {
+        await ensureBgImageLoaded(cat);
+      }
 
       if (state.adminTab === 'template' && state.currentView === 'admin') {
         renderCertCanvas();
@@ -1042,28 +1037,62 @@
       }
     }
 
-    async function saveLayoutSettings() {
+    async function saveLayoutSettings(category = null) {
       try {
         localStorage.setItem('kembaranas_layout_v3', JSON.stringify(state.layouts));
-      } catch (err) {
-        showToast("Storage browser lokal penuh!", "warning");
+      } catch (e) {
+        console.warn("Storage lokal penuh, menggunakan Cloud Firestore.");
       }
 
       try {
-        await db.collection("settings").doc("layouts").set(state.layouts);
+        if (category) {
+          await db.collection("layouts").doc(category).set(state.layouts[category]);
+        } else {
+          const batch = db.batch();
+          Object.keys(state.layouts).forEach(cat => {
+            batch.set(db.collection("layouts").doc(cat), state.layouts[cat]);
+          });
+          await batch.commit();
+        }
         return true;
       } catch (err) {
-        console.error("Gagal menyimpan layout ke Firestore:", err);
-        showToast("Gagal menyimpan layout ke Cloud Server", "error");
+        console.error("Gagal simpan layout ke Firebase:", err);
+        showToast("Gagal mengunggah layout ke Cloud Server!", "error");
         return false;
       }
     }
 
     async function saveCurrentLayoutExplicitly() {
       onLayoutInputChange();
-      const success = await saveLayoutSettings();
-      const cat = document.getElementById('editorCategorySelect')?.value || 'Peserta';
-      if (success) showToast(`Pengaturan layout & template kategori ${cat} berhasil tersimpan ke Cloud!`, "success");
+      const cat = normalizeCategory(document.getElementById('editorCategorySelect')?.value || 'Peserta');
+      showToast("Menyimpan template layout ke Cloud Server...", "info");
+      const success = await saveLayoutSettings(cat);
+      if (success) showToast(`Pengaturan layout kategori ${cat} tersimpan di Cloud Firebase!`, "success");
+    }
+
+    function ensureBgImageLoaded(category) {
+      return new Promise((resolve) => {
+        const layout = state.layouts[category];
+        if (!layout || !layout.bgImage) {
+          resolve(null);
+          return;
+        }
+        if (state.loadedBgImages[category] && state.loadedBgImages[category].complete) {
+          resolve(state.loadedBgImages[category]);
+          return;
+        }
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          state.loadedBgImages[category] = img;
+          resolve(img);
+        };
+        img.onerror = () => {
+          console.error("Gagal memuat latar belakang kategori:", category);
+          resolve(null);
+        };
+        img.src = layout.bgImage;
+      });
     }
 
     function getMaxNumCode() {
@@ -1997,7 +2026,7 @@
       showToast("Template Excel berhasil diunduh!", "info");
     }
 
-    // CANVAS RENDER LOGIC
+    // CANVAS EDITOR LOGIC
     function onEditorCategoryChange() {
       const cat = normalizeCategory(document.getElementById('editorCategorySelect').value);
       document.getElementById('canvasCategoryBadge').innerText = cat;
@@ -2052,26 +2081,12 @@
         const tempImg = new Image();
         tempImg.onload = async function() {
           const offCanvas = document.createElement('canvas');
-          let width = tempImg.width;
-          let height = tempImg.height;
-          const maxDim = 1600;
-
-          if (width > maxDim || height > maxDim) {
-            if (width > height) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            } else {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
-            }
-          }
-
-          offCanvas.width = width;
-          offCanvas.height = height;
+          offCanvas.width = 1200;
+          offCanvas.height = 850;
           const offCtx = offCanvas.getContext('2d');
-          offCtx.drawImage(tempImg, 0, 0, width, height);
+          offCtx.drawImage(tempImg, 0, 0, 1200, 850);
 
-          const compressedDataUrl = offCanvas.toDataURL('image/jpeg', 0.72);
+          const compressedDataUrl = offCanvas.toDataURL('image/jpeg', 0.82);
 
           const finalImg = new Image();
           finalImg.onload = async function() {
@@ -2079,11 +2094,13 @@
             if (!state.layouts[cat]) state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat] };
             state.layouts[cat].bgImage = compressedDataUrl;
 
-            showToast("Menyimpan template background ke Cloud Firestore...", "info");
-            await saveLayoutSettings();
-            document.getElementById('bgRemoveContainer').classList.remove('hidden');
-            await renderCertCanvas();
-            showToast(`Background custom kategori ${cat} tersimpan & tersinkronisasi ke Cloud!`, "success");
+            showToast("Mengunggah template background ke Firebase...", "info");
+            const saved = await saveLayoutSettings(cat);
+            if (saved) {
+              document.getElementById('bgRemoveContainer').classList.remove('hidden');
+              await renderCertCanvas();
+              showToast(`Template background kategori ${cat} tersimpan di Cloud Server!`, "success");
+            }
           };
           finalImg.src = compressedDataUrl;
         };
@@ -2097,7 +2114,7 @@
       if (state.layouts[cat]) {
         state.layouts[cat].bgImage = null;
         delete state.loadedBgImages[cat];
-        await saveLayoutSettings();
+        await saveLayoutSettings(cat);
         document.getElementById('bgRemoveContainer').classList.add('hidden');
         await renderCertCanvas();
         showToast(`Background custom kategori ${cat} dihapus`, "info");
@@ -2107,7 +2124,7 @@
     async function resetCategoryLayout() {
       const cat = normalizeCategory(document.getElementById('editorCategorySelect').value);
       state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat], bgImage: state.layouts[cat]?.bgImage || null };
-      await saveLayoutSettings();
+      await saveLayoutSettings(cat);
       onEditorCategoryChange();
       showToast(`Layout posisi kategori ${cat} direset`, "info");
     }
@@ -2143,39 +2160,22 @@
       });
     }
 
-    // PERBAIKAN DYNAMIC CANVAS RENDER (MENGGUNAKAN LAYOUT CLOUD TERBARU KATEGORI DATA SEMENTARA DILAYANI)
-    async function renderCertCanvas(sampleCert = null) {
-      const canvas = document.getElementById('certCanvas');
+    // FUNGSI PENGGAMBARAN UTAMA CANVAS (DAPAT DIGUNAKAN DI CANVAS MANAPUN)
+    async function drawCertToCanvas(canvas, cert) {
       if (!canvas) return null;
       const ctx = canvas.getContext('2d');
-
-      const category = sampleCert ? normalizeCategory(sampleCert.category) : normalizeCategory(document.getElementById('editorCategorySelect')?.value || 'Peserta');
+      const category = normalizeCategory(cert.category || 'Peserta');
       const layout = state.layouts[category] || DEFAULT_LAYOUTS[category];
 
-      const cert = sampleCert || state.certificates.find(c => c.category === category) || {
-        name: "FAEYZA KENZIE GIAR PRAMIYADI", school: "SMAIT Ummul Quro Bogor",
-        certNo: "0001-0247/KEMBARANAS-III/SAKO-SIT/X/2026", category: category, numCode: "0001"
-      };
-
-      // Pastikan Background Image kategori dimuat jika tersedia di Firestore
-      if (layout && layout.bgImage && !state.loadedBgImages[category]) {
-        await new Promise((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            state.loadedBgImages[category] = img;
-            resolve();
-          };
-          img.onerror = () => resolve();
-          img.src = layout.bgImage;
-        });
-      }
+      // Pastikan gambar latar kustom selesai dimuat
+      await ensureBgImageLoaded(category);
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (state.loadedBgImages[category]) {
         ctx.drawImage(state.loadedBgImages[category], 0, 0, canvas.width, canvas.height);
       } else {
-        // Fallback Template Bawaan jika belum ada background custom
+        // Fallback Template Bawaan jika belum ada background kustom
         ctx.fillStyle = "#fdfbf7"; ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.strokeStyle = "#fa4622"; ctx.lineWidth = 14; ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
         ctx.strokeStyle = "#d97706"; ctx.lineWidth = 3; ctx.strokeRect(34, 34, canvas.width - 68, canvas.height - 68);
@@ -2218,28 +2218,56 @@
       return canvas;
     }
 
-    async function downloadTestCanvasImage(certObj = null) {
-      showToast("Menyiapkan sertifikat...", "info");
-      await renderCertCanvas(certObj);
+    async function renderCertCanvas(sampleCert = null) {
       const canvas = document.getElementById('certCanvas');
-      if (!canvas) return;
+      if (!canvas) return null;
+      const rawCat = document.getElementById('editorCategorySelect')?.value || 'Peserta';
+      const category = sampleCert ? normalizeCategory(sampleCert.category) : normalizeCategory(rawCat);
+      const cert = sampleCert || state.certificates.find(c => c.category === category) || {
+        name: "FAEYZA KENZIE GIAR PRAMIYADI", school: "SMAIT Ummul Quro Bogor",
+        certNo: "0001-0247/KEMBARANAS-III/SAKO-SIT/X/2026", category: category, numCode: "0001"
+      };
+      return await drawCertToCanvas(canvas, cert);
+    }
 
-      const certName = certObj ? certObj.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Kembaranas_III';
+    async function downloadTestCanvasImage(certObj = null) {
+      const rawCat = document.getElementById('editorCategorySelect')?.value || 'Peserta';
+      const category = certObj ? normalizeCategory(certObj.category) : normalizeCategory(rawCat);
+      const cert = certObj || state.certificates.find(c => c.category === category) || {
+        name: "FAEYZA KENZIE GIAR PRAMIYADI", school: "SMAIT Ummul Quro Bogor",
+        certNo: "0001-0247/KEMBARANAS-III/SAKO-SIT/X/2026", category: category, numCode: "0001"
+      };
+      
+      const renderCanvas = document.createElement('canvas');
+      renderCanvas.width = 1200;
+      renderCanvas.height = 850;
+      
+      await drawCertToCanvas(renderCanvas, cert);
+
+      const certName = (cert.name || 'Kembaranas_III').replace(/[^a-zA-Z0-9]/g, '_');
       const link = document.createElement('a');
       link.download = `Sertifikat_${certName}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.href = renderCanvas.toDataURL('image/png');
       link.click();
       showToast("Sertifikat PNG berhasil diunduh!", "success");
     }
 
     async function downloadCertForRecord(id) {
       const rec = state.certificates.find(c => c.id === id) || state.activeCert;
-      if (!rec) return;
+      if (!rec) {
+        showToast("Data sertifikat tidak ditemukan!", "error");
+        return;
+      }
+      showToast("Sedang menyiapkan file sertifikat...", "info");
       await downloadTestCanvasImage(rec);
     }
 
     async function downloadActivePublicCert() {
-      if (state.activeCert) await downloadCertForRecord(state.activeCert.id);
+      if (state.activeCert) {
+        await downloadCertForRecord(state.activeCert.id);
+      } else {
+        showToast("Pilih data sertifikat terlebih dahulu!", "warning");
+      }
     }
 
     function openConfirmModal(opts) {
