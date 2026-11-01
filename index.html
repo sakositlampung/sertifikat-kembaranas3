@@ -157,7 +157,7 @@
     </div>
   </aside>
 
-  <!-- TOP NAVIGATION BAR (KUSUS HP: HANYA GARIS 3 & LOGO) -->
+  <!-- TOP NAVIGATION BAR -->
   <header id="appHeader" class="bg-brand-navy text-white shadow-md sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       
@@ -180,7 +180,7 @@
         </div>
       </div>
 
-      <!-- Right Action Buttons (DISEMBUNYIKAN PADA HP, HANYA TAMPIL DI DESKTOP/SM+) -->
+      <!-- Right Action Buttons -->
       <div id="navRightButtons" class="hidden sm:flex items-center space-x-2 sm:space-x-3">
         <button onclick="switchView('public_search')" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs sm:text-sm font-medium transition flex items-center space-x-1.5">
           <i class="fa-solid fa-magnifying-glass"></i>
@@ -282,7 +282,6 @@
 
     <!-- VIEW 3: ADMIN DASHBOARD -->
     <section id="viewAdminDashboard" class="hidden flex-grow bg-gray-50 flex flex-col">
-      <!-- SUB-HEADER ADMIN (DISEMBUNYIKAN DI HP AGAR LEBIH BERSIH) -->
       <div class="bg-white border-b border-gray-200 sticky top-16 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between py-2.5">
           <div class="flex items-center space-x-2">
@@ -292,7 +291,6 @@
             <span class="text-xs text-gray-500">| Sertifikat Kembaranas III</span>
           </div>
 
-          <!-- TAB HORIZONAL HANYA TAMPIL DI DESKTOP/SM+ -->
           <div class="hidden sm:flex items-center space-x-2">
             <button onclick="switchAdminTab('data')" id="tabBtnData" class="admin-tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-navy text-white">
               <i class="fa-solid fa-table-list"></i>
@@ -508,7 +506,7 @@
           </div>
         </div>
 
-        <!-- TAB 3: CANVAS EDITOR (OPTIMASI PREVIEW CANVAS HP/DESKTOP) -->
+        <!-- TAB 3: CANVAS EDITOR -->
         <div id="adminTabTemplate" class="hidden space-y-6">
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
@@ -629,7 +627,7 @@
               <div class="pt-2 flex flex-col gap-2">
                 <button onclick="saveCurrentLayoutExplicitly()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition flex items-center justify-center space-x-2 shadow">
                   <i class="fa-solid fa-floppy-disk"></i>
-                  <span>Simpan Pengaturan Layout</span>
+                  <span>Simpan Pengaturan Layout (Cloud)</span>
                 </button>
 
                 <div class="flex gap-2">
@@ -644,7 +642,7 @@
               </div>
             </div>
 
-            <!-- PREVIEW SERTIFIKAT CANVAS (SOLUSI ULTRA RESPONSIF HP & DESKTOP) -->
+            <!-- PREVIEW SERTIFIKAT CANVAS -->
             <div class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-gray-200 lg:col-span-2 flex flex-col items-center justify-start w-full">
               <div class="flex items-center justify-between w-full mb-3">
                 <span class="text-xs font-bold text-gray-800 flex items-center space-x-1.5">
@@ -656,7 +654,6 @@
                 </span>
               </div>
               
-              <!-- Responsive Aspect Ratio Container untuk menjamin Canvas tampil di layar HP -->
               <div class="w-full bg-gray-100 rounded-lg border border-gray-300 p-2 shadow-inner flex items-center justify-center overflow-hidden min-h-[220px]">
                 <div class="relative w-full aspect-[1200/850] max-w-[1200px] flex items-center justify-center bg-white rounded shadow">
                   <canvas id="certCanvas" width="1200" height="850" class="w-full h-full object-contain block rounded"></canvas>
@@ -912,7 +909,7 @@
 
     window.addEventListener('DOMContentLoaded', async () => {
       await loadInitialDataFromFirebase();
-      loadLayoutSettings();
+      await loadLayoutSettings();
       checkURLParameters();
     });
 
@@ -993,7 +990,45 @@
       await batch.commit().catch(e => console.error("Firestore error:", e));
     }
 
-    function loadLayoutSettings() {
+    // PERBAIKAN: SINKRONISASI PENGATURAN LAYOUT & BACKGROUND DENGAN FIRESTORE
+    async function loadLayoutSettings() {
+      try {
+        const doc = await db.collection("settings").doc("layouts").get();
+        if (doc.exists && doc.data()) {
+          state.layouts = doc.data();
+          localStorage.setItem('kembaranas_layout_v3', JSON.stringify(state.layouts));
+        } else {
+          loadLayoutFromLocalStorageOrDefault();
+        }
+      } catch (err) {
+        console.warn("Gagal membaca layout Firestore, menggunakan cache lokal:", err);
+        loadLayoutFromLocalStorageOrDefault();
+      }
+
+      const preloadPromises = Object.keys(state.layouts).map(cat => {
+        return new Promise((resolve) => {
+          if (state.layouts[cat] && state.layouts[cat].bgImage) {
+            const img = new Image();
+            img.onload = () => {
+              state.loadedBgImages[cat] = img;
+              resolve();
+            };
+            img.onerror = () => resolve();
+            img.src = state.layouts[cat].bgImage;
+          } else {
+            resolve();
+          }
+        });
+      });
+
+      await Promise.all(preloadPromises);
+
+      if (state.adminTab === 'template' && state.currentView === 'admin') {
+        renderCertCanvas();
+      }
+    }
+
+    function loadLayoutFromLocalStorageOrDefault() {
       const saved = localStorage.getItem('kembaranas_layout_v3');
       if (saved) {
         try {
@@ -1004,36 +1039,31 @@
         } catch(e) { state.layouts = JSON.parse(JSON.stringify(DEFAULT_LAYOUTS)); }
       } else {
         state.layouts = JSON.parse(JSON.stringify(DEFAULT_LAYOUTS));
-        saveLayoutSettings();
       }
-
-      Object.keys(state.layouts).forEach(cat => {
-        if (state.layouts[cat] && state.layouts[cat].bgImage) {
-          const img = new Image();
-          img.onload = () => {
-            state.loadedBgImages[cat] = img;
-            if (state.adminTab === 'template') renderCertCanvas();
-          };
-          img.src = state.layouts[cat].bgImage;
-        }
-      });
     }
 
-    function saveLayoutSettings() {
+    async function saveLayoutSettings() {
       try {
         localStorage.setItem('kembaranas_layout_v3', JSON.stringify(state.layouts));
+      } catch (err) {
+        showToast("Storage browser lokal penuh!", "warning");
+      }
+
+      try {
+        await db.collection("settings").doc("layouts").set(state.layouts);
         return true;
       } catch (err) {
-        showToast("Storage lokal penuh! Layout disimpan sementara.", "warning");
+        console.error("Gagal menyimpan layout ke Firestore:", err);
+        showToast("Gagal menyimpan layout ke Cloud Server", "error");
         return false;
       }
     }
 
-    function saveCurrentLayoutExplicitly() {
+    async function saveCurrentLayoutExplicitly() {
       onLayoutInputChange();
-      const success = saveLayoutSettings();
+      const success = await saveLayoutSettings();
       const cat = document.getElementById('editorCategorySelect')?.value || 'Peserta';
-      if (success) showToast(`Pengaturan layout & template kategori ${cat} tersimpan!`, "success");
+      if (success) showToast(`Pengaturan layout & template kategori ${cat} berhasil tersimpan ke Cloud!`, "success");
     }
 
     function getMaxNumCode() {
@@ -2020,7 +2050,7 @@
 
       reader.onload = function(evt) {
         const tempImg = new Image();
-        tempImg.onload = function() {
+        tempImg.onload = async function() {
           const offCanvas = document.createElement('canvas');
           let width = tempImg.width;
           let height = tempImg.height;
@@ -2044,15 +2074,16 @@
           const compressedDataUrl = offCanvas.toDataURL('image/jpeg', 0.72);
 
           const finalImg = new Image();
-          finalImg.onload = function() {
+          finalImg.onload = async function() {
             state.loadedBgImages[cat] = finalImg;
             if (!state.layouts[cat]) state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat] };
             state.layouts[cat].bgImage = compressedDataUrl;
 
-            saveLayoutSettings();
+            showToast("Menyimpan template background ke Cloud Firestore...", "info");
+            await saveLayoutSettings();
             document.getElementById('bgRemoveContainer').classList.remove('hidden');
-            renderCertCanvas();
-            showToast(`Background custom kategori ${cat} tersimpan!`, "success");
+            await renderCertCanvas();
+            showToast(`Background custom kategori ${cat} tersimpan & tersinkronisasi ke Cloud!`, "success");
           };
           finalImg.src = compressedDataUrl;
         };
@@ -2061,22 +2092,22 @@
       reader.readAsDataURL(file);
     }
 
-    function removeCategoryBgImage() {
+    async function removeCategoryBgImage() {
       const cat = normalizeCategory(document.getElementById('editorCategorySelect').value);
       if (state.layouts[cat]) {
         state.layouts[cat].bgImage = null;
         delete state.loadedBgImages[cat];
-        saveLayoutSettings();
+        await saveLayoutSettings();
         document.getElementById('bgRemoveContainer').classList.add('hidden');
-        renderCertCanvas();
+        await renderCertCanvas();
         showToast(`Background custom kategori ${cat} dihapus`, "info");
       }
     }
 
-    function resetCategoryLayout() {
+    async function resetCategoryLayout() {
       const cat = normalizeCategory(document.getElementById('editorCategorySelect').value);
       state.layouts[cat] = { ...DEFAULT_LAYOUTS[cat], bgImage: state.layouts[cat]?.bgImage || null };
-      saveLayoutSettings();
+      await saveLayoutSettings();
       onEditorCategoryChange();
       showToast(`Layout posisi kategori ${cat} direset`, "info");
     }
@@ -2112,13 +2143,13 @@
       });
     }
 
+    // PERBAIKAN DYNAMIC CANVAS RENDER (MENGGUNAKAN LAYOUT CLOUD TERBARU KATEGORI DATA SEMENTARA DILAYANI)
     async function renderCertCanvas(sampleCert = null) {
       const canvas = document.getElementById('certCanvas');
       if (!canvas) return null;
       const ctx = canvas.getContext('2d');
 
-      const rawCat = document.getElementById('editorCategorySelect')?.value || 'Peserta';
-      const category = normalizeCategory(rawCat);
+      const category = sampleCert ? normalizeCategory(sampleCert.category) : normalizeCategory(document.getElementById('editorCategorySelect')?.value || 'Peserta');
       const layout = state.layouts[category] || DEFAULT_LAYOUTS[category];
 
       const cert = sampleCert || state.certificates.find(c => c.category === category) || {
@@ -2126,16 +2157,30 @@
         certNo: "0001-0247/KEMBARANAS-III/SAKO-SIT/X/2026", category: category, numCode: "0001"
       };
 
+      // Pastikan Background Image kategori dimuat jika tersedia di Firestore
+      if (layout && layout.bgImage && !state.loadedBgImages[category]) {
+        await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            state.loadedBgImages[category] = img;
+            resolve();
+          };
+          img.onerror = () => resolve();
+          img.src = layout.bgImage;
+        });
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (state.loadedBgImages[category]) {
         ctx.drawImage(state.loadedBgImages[category], 0, 0, canvas.width, canvas.height);
       } else {
+        // Fallback Template Bawaan jika belum ada background custom
         ctx.fillStyle = "#fdfbf7"; ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.strokeStyle = "#fa4622"; ctx.lineWidth = 14; ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
         ctx.strokeStyle = "#d97706"; ctx.lineWidth = 3; ctx.strokeRect(34, 34, canvas.width - 68, canvas.height - 68);
         ctx.fillStyle = "#fa4622"; ctx.beginPath(); ctx.arc(canvas.width / 2, 85, 45, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "#ffffff"; ctx.font = "bold 28px FontAwesome"; ctx.textAlign = "center"; ctx.fillText("", canvas.width / 2, 94);
+        ctx.fillStyle = "#ffffff"; ctx.font = "bold 28px FontAwesome"; ctx.textAlign = "center"; ctx.fillText("\uf6ec", canvas.width / 2, 94);
         ctx.fillStyle = "#0f172a"; ctx.font = "bold 32px 'Plus Jakarta Sans', sans-serif"; ctx.fillText("SERTIFIKAT PENGHARGAAN", canvas.width / 2, 180);
         ctx.fillStyle = "#d97706"; ctx.font = "bold 16px 'Plus Jakarta Sans', sans-serif"; ctx.fillText(`KEMBARANAS III SAKO SIT - ${category.toUpperCase()}`, canvas.width / 2, 215);
       }
@@ -2174,6 +2219,7 @@
     }
 
     async function downloadTestCanvasImage(certObj = null) {
+      showToast("Menyiapkan sertifikat...", "info");
       await renderCertCanvas(certObj);
       const canvas = document.getElementById('certCanvas');
       if (!canvas) return;
@@ -2187,10 +2233,8 @@
     }
 
     async function downloadCertForRecord(id) {
-      const rec = state.certificates.find(c => c.id === id);
+      const rec = state.certificates.find(c => c.id === id) || state.activeCert;
       if (!rec) return;
-      const currentCatSelect = document.getElementById('editorCategorySelect');
-      if (currentCatSelect) currentCatSelect.value = rec.category;
       await downloadTestCanvasImage(rec);
     }
 
